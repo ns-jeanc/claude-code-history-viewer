@@ -50,6 +50,14 @@ export interface ProjectSliceState {
   isLoadingSessions: boolean;
   isLoadingMoreSessions: boolean;
   isRefreshingAllConversations: boolean;
+  // Cross-project flat timeline ("all sessions by time" grouping mode).
+  // Independent from the per-selected-project `sessions` window above so the
+  // two views don't clobber each other when the user toggles modes.
+  allSessions: ClaudeSession[];
+  allSessionsTotal: number;
+  allSessionsOffset: number;
+  allSessionsHasMore: boolean;
+  isLoadingAllSessions: boolean;
   error: AppError | null;
 }
 
@@ -61,6 +69,8 @@ export interface ProjectSliceActions {
   selectProject: (project: ClaudeProject) => Promise<void>;
   reloadProjectSessions: (project: ClaudeProject) => Promise<void>;
   loadMoreSessions: () => Promise<void>;
+  loadAllSessions: () => Promise<void>;
+  loadMoreAllSessions: () => Promise<void>;
   clearProjectSelection: (options?: WebUINavigationOptions) => void;
   setClaudePath: (path: string) => Promise<void>;
   setError: (error: AppError | null) => void;
@@ -92,6 +102,11 @@ const initialProjectState: ProjectSliceState = {
   isLoadingMoreSessions: false,
   isRefreshingAllConversations: false,
   error: null,
+  allSessions: [],
+  allSessionsTotal: 0,
+  allSessionsOffset: 0,
+  allSessionsHasMore: false,
+  isLoadingAllSessions: false,
 };
 
 const SESSION_PAGE_LIMIT = 250;
@@ -107,6 +122,88 @@ const dedupeSessionsById = (sessions: ClaudeSession[]): ClaudeSession[] => {
     deduped.push(session);
   }
   return deduped;
+};
+
+/**
+ * Resolve the owning project for a session by `file_path` prefix (respecting
+ * the path-segment boundary so sibling projects don't collide), falling back
+ * to a name match — the same logic `App.tsx` uses for click routing. Used to
+ * apply hidden-project filtering client-side in the cross-project timeline,
+ * since the backend doesn't own `hiddenPatterns`.
+ */
+const findProjectForSession = (
+  session: ClaudeSession,
+  projects: ClaudeProject[]
+): ClaudeProject | undefined => {
+  if (session.file_path) {
+    const fp = session.file_path;
+    const byPath = projects.find((p) => {
+      if (!fp.startsWith(p.path)) return false;
+      if (fp.length === p.path.length) return true;
+      const next = fp.charAt(p.path.length);
+      return next === "/" || next === "\\";
+    });
+    if (byPath) return byPath;
+  }
+  return projects.find((p) => p.name === session.project_name);
+};
+
+/**
+ * Drop sessions whose owning project is hidden. `isProjectHiddenFn` is the
+ * store action bound to the current metadata.
+ */
+const filterSessionsByHiddenProjects = (
+  sessions: ClaudeSession[],
+  projects: ClaudeProject[],
+  isProjectHiddenFn: (projectPath: string) => boolean
+): ClaudeSession[] =>
+  sessions.filter((session) => {
+    const project = findProjectForSession(session, projects);
+    // Keep sessions whose project can't be resolved — hiding them would punish
+    // edge cases (a session whose project hasn't scanned yet) more than showing
+    // an extra row.
+    return !project || !isProjectHiddenFn(project.actual_path);
+  });
+
+/**
+ * Resolve the `scan_all_projects` args the same way `scanProjects` does, so the
+ * flat timeline enumerates the same project set as the sidebar.
+ */
+const resolveScanProviderArgs = (state: FullAppStore) => {
+  const { claudePath, providers, activeProviders } = state;
+  const settings = state.userMetadata?.settings;
+  const customClaudePaths = settings?.customClaudePaths;
+  const wslEnabled = settings?.wsl?.enabled ?? false;
+  const wslExcludedDistros = settings?.wsl?.excludedDistros ?? [];
+  const detectedProviderIds = normalizeProviderIds(
+    providers
+      .filter((provider) => provider.is_available)
+      .map((provider) => provider.id as ProviderId)
+  );
+  const persistedProviderIds = normalizeProviderIds(
+    settings?.discoveredProviderIds ?? []
+  );
+  const requestedProviderIds = normalizeProviderIds(activeProviders);
+  const providerSet = new Set<ProviderId>(
+    detectedProviderIds.length > 0
+      ? detectedProviderIds
+      : persistedProviderIds.length > 0
+        ? persistedProviderIds
+      : requestedProviderIds.length > 0
+        ? requestedProviderIds
+        : [DEFAULT_PROVIDER_ID]
+  );
+  if (claudePath || (customClaudePaths && customClaudePaths.length > 0) || wslEnabled) {
+    providerSet.add(DEFAULT_PROVIDER_ID);
+  }
+  const activeProvidersArg = PROVIDER_IDS.filter((provider) => providerSet.has(provider));
+  return {
+    claudePath,
+    activeProviders: activeProvidersArg,
+    customClaudePaths,
+    wslEnabled,
+    wslExcludedDistros,
+  };
 };
 
 // ============================================================================
@@ -789,6 +886,89 @@ export const createProjectSlice: StateCreator<
       set({ error: { type: AppErrorType.UNKNOWN, message: String(error) } });
     } finally {
       if (requestId === getRequestId("selectProject")) {
+        set({ isLoadingMoreSessions: false });
+      }
+    }
+  },
+
+  // ── Cross-project flat timeline ("all sessions by time") ────────────────
+  // Loads a single globally time-sorted page of sessions across every project
+  // via the `load_all_sessions_page` backend command. State is kept separate
+  // from the per-selected-project `sessions` window so toggling the grouping
+  // mode back and forth doesn't reload either view from scratch.
+  loadAllSessions: async () => {
+    const requestId = nextRequestId("allSessions");
+    set((state) => ({
+      isLoadingAllSessions: state.allSessions.length === 0,
+    }));
+    try {
+      const args = resolveScanProviderArgs(get());
+      const page = await api<SessionPage>("load_all_sessions_page", {
+        ...args,
+        excludeSidechain: get().excludeSidechain,
+        offset: 0,
+        limit: SESSION_PAGE_LIMIT,
+      });
+      if (requestId !== getRequestId("allSessions")) return;
+
+      const visible = filterSessionsByHiddenProjects(
+        page.sessions,
+        get().projects,
+        get().isProjectHidden
+      );
+      set({
+        allSessions: visible,
+        allSessionsTotal: page.total,
+        allSessionsOffset: page.nextOffset,
+        allSessionsHasMore: page.hasMore,
+      });
+    } catch (error) {
+      if (requestId !== getRequestId("allSessions")) return;
+      console.error("Failed to load all sessions:", error);
+      set({ error: { type: AppErrorType.UNKNOWN, message: String(error) } });
+    } finally {
+      if (requestId === getRequestId("allSessions")) {
+        set({ isLoadingAllSessions: false });
+      }
+    }
+  },
+
+  loadMoreAllSessions: async () => {
+    const { allSessionsOffset, allSessionsHasMore, isLoadingAllSessions, isLoadingMoreSessions } =
+      get();
+    if (!allSessionsHasMore || isLoadingAllSessions || isLoadingMoreSessions) return;
+
+    const requestId = getRequestId("allSessions");
+    // Reuse `isLoadingMoreSessions` so SessionList's existing "loading more"
+    // spinner lights up without a new prop.
+    set({ isLoadingMoreSessions: true });
+    try {
+      const args = resolveScanProviderArgs(get());
+      const page = await api<SessionPage>("load_all_sessions_page", {
+        ...args,
+        excludeSidechain: get().excludeSidechain,
+        offset: allSessionsOffset,
+        limit: SESSION_PAGE_LIMIT,
+      });
+      if (requestId !== getRequestId("allSessions")) return;
+
+      const visible = filterSessionsByHiddenProjects(
+        page.sessions,
+        get().projects,
+        get().isProjectHidden
+      );
+      set({
+        allSessions: dedupeSessionsById([...get().allSessions, ...visible]),
+        allSessionsTotal: page.total,
+        allSessionsOffset: page.nextOffset,
+        allSessionsHasMore: page.hasMore,
+      });
+    } catch (error) {
+      if (requestId !== getRequestId("allSessions")) return;
+      console.error("Failed to load more all sessions:", error);
+      set({ error: { type: AppErrorType.UNKNOWN, message: String(error) } });
+    } finally {
+      if (requestId === getRequestId("allSessions")) {
         set({ isLoadingMoreSessions: false });
       }
     }

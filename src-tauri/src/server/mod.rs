@@ -85,6 +85,7 @@ const READ_ONLY_ALLOWED_API_PATHS: &[&str] = &[
     "/load_presets",
     "/load_project_sessions",
     "/load_project_sessions_page",
+    "/load_all_sessions_page",
     "/load_provider_messages",
     "/load_provider_messages_paginated",
     "/load_provider_sessions",
@@ -304,6 +305,7 @@ pub fn build_router(
             "/load_provider_sessions_page",
             post(h::load_provider_sessions_page),
         )
+        .route("/load_all_sessions_page", post(h::load_all_sessions_page))
         .route("/load_provider_messages", post(h::load_provider_messages))
         .route(
             "/load_provider_messages_paginated",

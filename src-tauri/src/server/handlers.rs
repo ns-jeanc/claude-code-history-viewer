@@ -324,6 +324,27 @@ pub struct ScanAllProjectsParams {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct AllSessionsPageParams {
+    #[serde(default)]
+    pub claude_path: Option<String>,
+    #[serde(default)]
+    pub active_providers: Option<Vec<String>>,
+    #[serde(default)]
+    pub custom_claude_paths: Option<Vec<commands::multi_provider::CustomClaudePathParam>>,
+    #[serde(default)]
+    pub wsl_enabled: Option<bool>,
+    #[serde(default)]
+    pub wsl_excluded_distros: Option<Vec<String>>,
+    #[serde(default)]
+    pub exclude_sidechain: Option<bool>,
+    #[serde(default)]
+    pub offset: Option<usize>,
+    #[serde(default)]
+    pub limit: Option<usize>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProviderSessionsParams {
     pub provider: String,
     pub project_path: String,
@@ -964,6 +985,24 @@ handler_json!(
         commands::multi_provider::load_provider_sessions_page(
             p.provider,
             p.project_path,
+            p.exclude_sidechain,
+            p.offset,
+            p.limit,
+        )
+        .await
+    }
+);
+
+handler_json!(
+    load_all_sessions_page,
+    AllSessionsPageParams,
+    |p: AllSessionsPageParams| async move {
+        commands::multi_provider::load_all_sessions_page(
+            p.claude_path,
+            p.active_providers,
+            p.custom_claude_paths,
+            p.wsl_enabled,
+            p.wsl_excluded_distros,
             p.exclude_sidechain,
             p.offset,
             p.limit,

@@ -40,6 +40,7 @@ interface SessionRowData {
   selectedIds: Set<string>;
   onSessionCheck: (session: ClaudeSession, e: React.MouseEvent | React.KeyboardEvent | React.KeyboardEvent) => void;
   onSessionModifierSelect: (session: ClaudeSession, e: React.MouseEvent | React.KeyboardEvent) => void;
+  showProjectLabel: boolean;
 }
 
 interface SessionRowProps {
@@ -59,6 +60,7 @@ const SessionRow: React.FC<SessionRowProps> = ({ index, style, data }) => {
     selectedIds,
     onSessionCheck,
     onSessionModifierSelect,
+    showProjectLabel,
   } = data;
   const session = sessions[index];
 
@@ -78,6 +80,7 @@ const SessionRow: React.FC<SessionRowProps> = ({ index, style, data }) => {
         isChecked={selectedIds.has(session.session_id)}
         onToggleSelect={(e) => onSessionCheck(session, e)}
         onModifierSelect={(e) => onSessionModifierSelect(session, e)}
+        showProjectLabel={showProjectLabel}
       />
     </div>
   );
@@ -223,6 +226,7 @@ export const SessionList: React.FC<SessionListProps> = ({
   onLoadMoreSessions = () => {},
   formatTimeAgo,
   variant = "default",
+  showProjectLabel = false,
 }) => {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
@@ -435,6 +439,7 @@ export const SessionList: React.FC<SessionListProps> = ({
       selectedIds: selectedIdSet,
       onSessionCheck: handleSessionCheck,
       onSessionModifierSelect: handleModifierSelect,
+      showProjectLabel,
     }),
     [
       filteredAndSortedSessions,
@@ -446,6 +451,7 @@ export const SessionList: React.FC<SessionListProps> = ({
       selectedIdSet,
       handleSessionCheck,
       handleModifierSelect,
+      showProjectLabel,
     ]
   );
 
@@ -508,6 +514,7 @@ export const SessionList: React.FC<SessionListProps> = ({
                 isChecked={selectedIdSet.has(session.session_id)}
                 onToggleSelect={(e) => handleSessionCheck(session, e)}
                 onModifierSelect={(e) => handleModifierSelect(session, e)}
+                showProjectLabel={showProjectLabel}
               />
             ))
           )}

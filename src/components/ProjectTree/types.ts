@@ -45,7 +45,7 @@ export interface ProjectTreeProps {
   onClose?: () => void;
 }
 
-export type GroupingStrategy = "none" | "directory" | "worktree";
+export type GroupingStrategy = "none" | "directory" | "worktree" | "sessions";
 
 export interface ProjectItemProps {
   project: ClaudeProject;
@@ -71,6 +71,12 @@ export interface SessionListProps {
   onLoadMoreSessions?: () => void;
   formatTimeAgo: (date: string) => string;
   variant?: "default" | "main" | "worktree";
+  /**
+   * Whether each row should display its originating project name. Only
+   * meaningful in the cross-project flat timeline; off (default) in per-project
+   * views where every row shares the same project.
+   */
+  showProjectLabel?: boolean;
 }
 
 export interface GroupHeaderProps {

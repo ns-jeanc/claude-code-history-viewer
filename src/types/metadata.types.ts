@@ -40,7 +40,7 @@ export interface ProjectMetadata {
 }
 
 /** Grouping mode for project tree display */
-export type GroupingMode = "none" | "worktree" | "directory";
+export type GroupingMode = "none" | "worktree" | "directory" | "sessions";
 
 /** Session sort order */
 export type SessionSortOrder = "newest" | "oldest";

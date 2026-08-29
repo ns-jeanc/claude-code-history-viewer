@@ -18,6 +18,7 @@
   "project.groupingDirectory": "Group by directory",
   "project.groupingNone": "Flat list",
   "project.groupingWorktree": "Group by worktree",
+  "project.groupingSessions": "All sessions by time",
   "project.hiddenPatterns": "Hidden patterns",
   "project.copyPath": "Copy path",
   "project.copyLastKnownPath": "Copy last-known path",

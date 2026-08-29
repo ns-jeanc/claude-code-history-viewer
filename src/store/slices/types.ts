@@ -108,6 +108,12 @@ export interface AppStoreState {
   isLoadingSessions: boolean;
   isLoadingMoreSessions: boolean;
   isRefreshingAllConversations: boolean;
+  // Cross-project flat timeline state (see projectSlice.ts).
+  allSessions: ClaudeSession[];
+  allSessionsTotal: number;
+  allSessionsOffset: number;
+  allSessionsHasMore: boolean;
+  isLoadingAllSessions: boolean;
   error: AppError | null;
 
   // Message state
@@ -246,6 +252,8 @@ export interface AppStoreActions {
   selectProject: (project: ClaudeProject) => Promise<void>;
   reloadProjectSessions: (project: ClaudeProject) => Promise<void>;
   loadMoreSessions: () => Promise<void>;
+  loadAllSessions: () => Promise<void>;
+  loadMoreAllSessions: () => Promise<void>;
   clearProjectSelection: (
     options?: import("@/utils/webuiDeepLink").WebUINavigationOptions,
   ) => void;

@@ -20,6 +20,8 @@ export interface SessionItemProps {
    * (Cmd/Ctrl+click or Shift+click). Enters selection mode.
    */
   onModifierSelect?: (e: React.MouseEvent) => void;
+  /** Show the originating project name in the meta row (flat timeline only). */
+  showProjectLabel?: boolean;
 }
 
 export interface SessionHeaderProps {
@@ -64,4 +66,6 @@ export interface SessionMetaProps {
   session: ClaudeSession;
   isSelected: boolean;
   formatTimeAgo: (date: string) => string;
+  /** Show the originating project name (flat timeline only). */
+  showProjectLabel?: boolean;
 }

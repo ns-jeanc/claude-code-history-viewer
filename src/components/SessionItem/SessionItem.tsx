@@ -24,6 +24,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
   isChecked = false,
   onToggleSelect,
   onModifierSelect,
+  showProjectLabel = false,
 }) => {
   const { t } = useTranslation();
   const editing = useSessionEditing(session);
@@ -187,6 +188,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
         session={session}
         isSelected={highlighted}
         formatTimeAgo={formatTimeAgo}
+        showProjectLabel={showProjectLabel}
       />
 
       {/* Right-click Context Menu */}

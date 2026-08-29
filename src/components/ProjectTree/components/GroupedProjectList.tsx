@@ -156,6 +156,28 @@ export const GroupedProjectList: React.FC<GroupedProjectListProps> = ({
     );
   };
 
+  // Cross-project flat timeline: a single time-sorted SessionList spanning
+  // every project, bypassing the project-tree grouping entirely. Sessions
+  // arrive pre-merged and globally sorted from `load_all_sessions_page`; each
+  // row shows its originating project name so the user can tell them apart.
+  if (groupingMode === "sessions") {
+    return (
+      <SessionList
+        sessions={sessions}
+        sessionsTotal={sessionsTotal}
+        hasMoreSessions={hasMoreSessions}
+        selectedSession={selectedSession}
+        isLoading={isLoading}
+        isLoadingMoreSessions={isLoadingMoreSessions}
+        onSessionSelect={onSessionSelect}
+        onSessionHover={onSessionHover}
+        onLoadMoreSessions={onLoadMoreSessions}
+        formatTimeAgo={formatTimeAgo}
+        showProjectLabel
+      />
+    );
+  }
+
   // Strategy 1: Directory Grouping
   if (groupingMode === "directory") {
     const unavailableProjects = directoryGroups.flatMap((group) =>

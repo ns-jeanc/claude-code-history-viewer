@@ -12,6 +12,7 @@ export const SessionMeta: React.FC<SessionMetaProps> = ({
   session,
   isSelected,
   formatTimeAgo,
+  showProjectLabel = false,
 }) => {
   const { t } = useTranslation();
 
@@ -46,6 +47,19 @@ export const SessionMeta: React.FC<SessionMetaProps> = ({
         </span>
         {session.message_count}
       </span>
+      {showProjectLabel && session.project_name && (
+        <span
+          className={cn(
+            "min-w-0 truncate px-1 py-0.5 rounded font-mono",
+            isSelected
+              ? "text-accent/70 bg-accent/10"
+              : "text-muted-foreground/80 bg-muted/40"
+          )}
+          title={session.project_name}
+        >
+          {session.project_name}
+        </span>
+      )}
       {session.storage_type && (
         <span
           className={cn(

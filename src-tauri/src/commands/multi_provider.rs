@@ -464,6 +464,84 @@ pub async fn load_provider_sessions_page(
     })
 }
 
+/// Maximum page size for the cross-project "all sessions" merge.
+const ALL_SESSIONS_PAGE_LIMIT: usize = 500;
+
+/// Load a single flat, globally time-sorted page of sessions across every
+/// project from every (active) provider.
+///
+/// Unlike `load_provider_sessions_page`, which paginates one project at a time,
+/// this enumerates projects via `scan_all_projects`, loads each project's full
+/// (cached, sidechain-filtered) session set through the existing per-provider
+/// dispatch, concatenates them, re-sorts the merged list by recency
+/// (`last_message_time` then `last_modified` — the same key per-project lists
+/// use), and finally slices `[offset, offset+limit)`. The returned `total` is
+/// the merged count across all projects, so the frontend gets a unified
+/// pagination cursor for the flat timeline view.
+#[tauri::command]
+pub async fn load_all_sessions_page(
+    claude_path: Option<String>,
+    active_providers: Option<Vec<String>>,
+    custom_claude_paths: Option<Vec<CustomClaudePathParam>>,
+    wsl_enabled: Option<bool>,
+    wsl_excluded_distros: Option<Vec<String>>,
+    exclude_sidechain: Option<bool>,
+    offset: Option<usize>,
+    limit: Option<usize>,
+) -> Result<crate::commands::session::SessionPage, String> {
+    let offset = offset.unwrap_or(0);
+    let limit = limit.unwrap_or(250).clamp(1, ALL_SESSIONS_PAGE_LIMIT);
+    let exclude = exclude_sidechain.unwrap_or(false);
+
+    // Reuse the sidebar's project enumeration so the flat view covers exactly
+    // the same project set (default/custom Claude paths, all non-claude
+    // providers, WSL when enabled).
+    let projects = scan_all_projects(
+        claude_path,
+        active_providers,
+        custom_claude_paths,
+        wsl_enabled,
+        wsl_excluded_distros,
+    )
+    .await?;
+
+    // Load each project's full session set via the per-provider dispatch.
+    // `load_provider_sessions` already wraps the synchronous filesystem work in
+    // `spawn_blocking` (for claude) and tags `session.provider`, so this loop
+    // stays on the async runtime while the heavy work runs on the blocking pool.
+    let mut merged: Vec<ClaudeSession> = Vec::new();
+    for project in projects {
+        let provider = project
+            .provider
+            .clone()
+            .unwrap_or_else(|| "claude".to_string());
+        match load_provider_sessions(provider.clone(), project.path.clone(), Some(exclude)).await {
+            Ok(sessions) => merged.extend(sessions),
+            Err(e) => log::warn!(
+                "load_all_sessions_page: '{}' load failed for {}: {e}",
+                provider,
+                project.path
+            ),
+        }
+    }
+
+    // Global recency sort (same key as per-project lists).
+    sort_sessions_by_recency(&mut merged);
+
+    let total = merged.len();
+    let page_sessions: Vec<ClaudeSession> = merged.into_iter().skip(offset).take(limit).collect();
+    let next_offset = offset.saturating_add(page_sessions.len());
+
+    Ok(crate::commands::session::SessionPage {
+        sessions: page_sessions,
+        total,
+        offset,
+        limit,
+        next_offset,
+        has_more: next_offset < total,
+    })
+}
+
 /// Default / maximum page size for `load_provider_messages_paginated`.
 const DEFAULT_MESSAGE_PAGE_SIZE: usize = 200;
 const MAX_MESSAGE_PAGE_LIMIT: usize = 500;

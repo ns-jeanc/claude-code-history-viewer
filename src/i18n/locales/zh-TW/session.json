@@ -18,6 +18,7 @@
   "project.groupingDirectory": "按目錄",
   "project.groupingNone": "列表",
   "project.groupingWorktree": "按工作樹",
+  "project.groupingSessions": "依時間排所有對話",
   "project.hiddenPatterns": "隱藏模式",
   "project.copyPath": "複製路徑",
   "project.copyLastKnownPath": "複製上次已知路徑",

@@ -8,6 +8,7 @@ import {
   List,
   FolderTree,
   GitBranch,
+  Clock,
   PanelLeftClose,
   PanelLeft,
   RotateCcw,
@@ -99,6 +100,28 @@ export const ProjectTree: React.FC<ProjectTreeProps> = ({
   const clearProjectSelection = useAppStore(
     (state) => state.clearProjectSelection
   );
+  // Cross-project flat timeline state ("all sessions by time" mode). Read
+  // directly from the store so the per-project `sessions` prop threading in
+  // App.tsx/AppLayout doesn't need to know about this view.
+  const allSessions = useAppStore((state) => state.allSessions);
+  const allSessionsTotal = useAppStore((state) => state.allSessionsTotal);
+  const allSessionsHasMore = useAppStore((state) => state.allSessionsHasMore);
+  const isLoadingAllSessions = useAppStore((state) => state.isLoadingAllSessions);
+  const loadAllSessions = useAppStore((state) => state.loadAllSessions);
+  const loadMoreAllSessions = useAppStore((state) => state.loadMoreAllSessions);
+
+  // Load the flat timeline on entering "sessions" mode (and reload when the
+  // underlying scan args or sidechain filter change, matching per-project
+  // reload triggers). An empty list with nothing in-flight is the "needs first
+  // load" signal; `loadAllSessions` is idempotent for re-entries via its own
+  // request-id guard.
+  useEffect(() => {
+    if (groupingMode !== "sessions") return;
+    if (allSessions.length === 0 && !isLoadingAllSessions) {
+      loadAllSessions();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupingMode, allSessions.length, isLoadingAllSessions]);
 
   const {
     expandedProjects,
@@ -919,6 +942,20 @@ export const ProjectTree: React.FC<ProjectTreeProps> = ({
                   >
                     <GitBranch className="w-3 h-3" />
                   </button>
+                  {/* All Sessions by Time (cross-project flat timeline) */}
+                  <button
+                    onClick={() => onGroupingModeChange("sessions")}
+                    className={cn(
+                      "p-1 rounded transition-all duration-200",
+                      groupingMode === "sessions"
+                        ? "bg-amber-500/20 text-amber-500"
+                        : "text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10"
+                    )}
+                    title={t("project.groupingSessions", "All sessions by time")}
+                    aria-label={t("project.groupingSessions", "All sessions by time")}
+                  >
+                    <Clock className="w-3 h-3" />
+                  </button>
                 </div>
               )}
               <span className="text-xs font-mono text-accent bg-accent/10 px-2 py-0.5 rounded-full">
@@ -1157,12 +1194,18 @@ export const ProjectTree: React.FC<ProjectTreeProps> = ({
                 worktreeGroups={filteredWorktreeGroups}
                 ungroupedProjects={filteredUngroupedProjects}
                 showProviderBadge={showProviderBadge}
-                sessions={sessions}
-                sessionsTotal={sessionsTotal}
-                hasMoreSessions={hasMoreSessions}
+                sessions={groupingMode === "sessions" ? allSessions : sessions}
+                sessionsTotal={
+                  groupingMode === "sessions" ? allSessionsTotal : sessionsTotal
+                }
+                hasMoreSessions={
+                  groupingMode === "sessions" ? allSessionsHasMore : hasMoreSessions
+                }
                 selectedProject={selectedProject}
                 selectedSession={selectedSession}
-                isLoading={isLoading}
+                isLoading={
+                  groupingMode === "sessions" ? isLoadingAllSessions : isLoading
+                }
                 isLoadingMoreSessions={isLoadingMoreSessions}
                 expandedProjects={expandedProjects}
                 setExpandedProjects={setExpandedProjects}
@@ -1171,7 +1214,9 @@ export const ProjectTree: React.FC<ProjectTreeProps> = ({
                 handleContextMenu={handleContextMenu}
                 onSessionSelect={handleSessionSelect}
                 onSessionHover={onSessionHover}
-                onLoadMoreSessions={onLoadMoreSessions}
+                onLoadMoreSessions={
+                  groupingMode === "sessions" ? loadMoreAllSessions : onLoadMoreSessions
+                }
                 formatTimeAgo={formatTimeAgo}
               />
             </div>
