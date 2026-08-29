@@ -1,6 +1,9 @@
 services:
   webui:
     build: .
+    user: "1000:1000"
+    environment:
+      - HOME=/home/cchv
     ports:
       - "127.0.0.1:3727:3727"
     volumes:

@@ -44,7 +44,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV http_proxy= https_proxy=
 
 # Run as non-root user for security
-RUN groupadd -r cchv && useradd -r -g cchv -d /home/cchv -s /sbin/nologin -m cchv
+RUN groupadd -r cchv && useradd -r -g cchv -d /home/cchv -s /sbin/nologin -m cchv \
+    && chmod 777 /home/cchv
 
 COPY --from=backend /app/src-tauri/target/release/claude-code-history-viewer /usr/local/bin/cchv-server
 
