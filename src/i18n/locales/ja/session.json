@@ -18,6 +18,7 @@
   "project.groupingDirectory": "ディレクトリ別",
   "project.groupingNone": "リスト",
   "project.groupingWorktree": "ワークツリー別",
+  "project.groupingSessions": "時系列で全セッション",
   "project.hiddenPatterns": "非表示パターン",
   "project.copyPath": "パスをコピー",
   "project.copyLastKnownPath": "最後に確認されたパスをコピー",
