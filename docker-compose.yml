@@ -10,6 +10,9 @@ services:
       - ${HOME}/.claude:/home/cchv/.claude:ro
       - ${HOME}/.codex:/home/cchv/.codex:ro
       - ${HOME}/.local/share/opencode:/home/cchv/.local/share/opencode:ro
+      # Writable app data (user-data.json, token, settings) — bind-mounted to
+      # host so it survives container recreation (docker compose up --build).
+      - ${HOME}/.claude-history-viewer:/home/cchv/.claude-history-viewer
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
