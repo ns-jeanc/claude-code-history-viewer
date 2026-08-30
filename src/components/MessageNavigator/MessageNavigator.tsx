@@ -10,6 +10,7 @@ import {
   getMessageUuidsByCategory,
 } from "../MessageViewer/helpers";
 import { NavigatorEntry } from "./NavigatorEntry";
+import { SessionPlanPrompt } from "../MessageViewer/components/SessionPlanPrompt";
 import { useNavigatorEntries } from "./useNavigatorEntries";
 
 // Height estimation constants for virtual scrolling
@@ -19,6 +20,8 @@ const PREVIEW_LINE_HEIGHT = 20; // Approximate height of one text line with line
 
 interface MessageNavigatorProps {
   messages: ClaudeMessage[];
+  /** Session id for per-session features (e.g. the plan prompt). */
+  sessionId?: string;
   width?: number;
   isResizing: boolean;
   onResizeStart: (e: React.MouseEvent<HTMLElement>) => void;
@@ -29,6 +32,7 @@ interface MessageNavigatorProps {
 
 export const MessageNavigator: React.FC<MessageNavigatorProps> = ({
   messages,
+  sessionId,
   width,
   isResizing,
   onResizeStart,
@@ -315,6 +319,9 @@ export const MessageNavigator: React.FC<MessageNavigatorProps> = ({
           )}
         </div>
       </div>
+
+      {/* Per-session plan prompt — what to do next in this session */}
+      {sessionId && <SessionPlanPrompt sessionId={sessionId} />}
 
       {/* Entry list with virtual scrolling */}
       {entries.length === 0 ? (

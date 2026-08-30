@@ -80,6 +80,7 @@ export const useSessionMetadata = (sessionId: string) => {
     [sessionMetadata?.tags]
   );
   const notes = sessionMetadata?.notes;
+  const planPrompt = sessionMetadata?.planPrompt;
   const hasClaudeCodeName = sessionMetadata?.hasClaudeCodeName ?? false;
 
   /**
@@ -160,6 +161,17 @@ export const useSessionMetadata = (sessionId: string) => {
   );
 
   /**
+   * Set or clear the session plan prompt (what to do next in this session)
+   * @param newPlan - Plan prompt text or undefined to clear
+   */
+  const setPlanPrompt = useCallback(
+    async (newPlan: string | undefined) => {
+      await updateSessionMetadata(sessionId, { planPrompt: newPlan });
+    },
+    [sessionId, updateSessionMetadata]
+  );
+
+  /**
    * Set Claude Code native rename status
    * @param value - true if renamed via Claude Code, false to clear
    */
@@ -177,6 +189,7 @@ export const useSessionMetadata = (sessionId: string) => {
     starred,
     tags,
     notes,
+    planPrompt,
     hasClaudeCodeName,
     isMetadataLoaded,
 
@@ -188,6 +201,7 @@ export const useSessionMetadata = (sessionId: string) => {
     removeTag,
     setTags,
     setNotes,
+    setPlanPrompt,
     setHasClaudeCodeName,
   };
 };

@@ -763,6 +763,7 @@ export const AppLayout: React.FC<AppLayoutProps> = (props) => {
                   <div className="hidden md:block">
                     <MessageNavigator
                       messages={messages}
+                      sessionId={selectedSession?.session_id}
                       width={navigatorWidth}
                       isResizing={isNavigatorResizing}
                       onResizeStart={handleNavigatorResizeStart}

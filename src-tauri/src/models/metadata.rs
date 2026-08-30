@@ -158,6 +158,10 @@ pub struct SessionMetadata {
     /// User notes about the session
     #[serde(skip_serializing_if = "Option::is_none")]
     pub notes: Option<String>,
+
+    /// Plan prompt — what the user intends to do next in this session
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub plan_prompt: Option<String>,
 }
 
 impl SessionMetadata {
@@ -167,6 +171,7 @@ impl SessionMetadata {
             && self.starred.is_none()
             && self.tags.is_empty()
             && self.notes.is_none()
+            && self.plan_prompt.is_none()
     }
 }
 
@@ -328,6 +333,7 @@ mod tests {
         session.custom_name = Some("My Session".to_string());
         session.starred = Some(true);
         session.tags = vec!["work".to_string(), "important".to_string()];
+        session.plan_prompt = Some("Refactor the export pipeline".to_string());
 
         let project = metadata.get_project_mut("my-project");
         project.alias = Some("Main Project".to_string());

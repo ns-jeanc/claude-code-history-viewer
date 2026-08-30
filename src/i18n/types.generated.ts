@@ -5,8 +5,8 @@
  * 직접 수정하지 마세요.
  *
  * 생성 명령: pnpm run generate:i18n-types
- * 생성 시간: 2026-08-26T18:00:54.440Z
- * 총 키 개수: 1928
+ * 생성 시간: 2026-08-29T19:09:25.381Z
+ * 총 키 개수: 1933
  * Namespace 수: 11
  */
 
@@ -418,7 +418,7 @@ export type AnalyticsKeys =
   | 'analytics.weeklyActivity';
 
 /**
- * session namespace의 번역 키 (257개)
+ * session namespace의 번역 키 (258개)
  * 파일: locales/{lang}/session.json
  */
 export type SessionKeys =
@@ -1336,7 +1336,7 @@ export type ErrorKeys =
   | 'error.viewDetails';
 
 /**
- * message namespace의 번역 키 (103개)
+ * message namespace의 번역 키 (107개)
  * 파일: locales/{lang}/message.json
  */
 export type MessageKeys =
@@ -1409,6 +1409,10 @@ export type MessageKeys =
   | 'messageViewer.noMessagesDescription'
   | 'messageViewer.noSearchResults'
   | 'messageViewer.opencode'
+  | 'messageViewer.planPrompt.placeholder'
+  | 'messageViewer.planPrompt.saved'
+  | 'messageViewer.planPrompt.saving'
+  | 'messageViewer.planPrompt.title'
   | 'messageViewer.priorContext'
   | 'messageViewer.refresh'
   | 'messageViewer.renderError'
@@ -2766,6 +2770,10 @@ export type TranslationKey =
   | 'messageViewer.noMessagesDescription'
   | 'messageViewer.noSearchResults'
   | 'messageViewer.opencode'
+  | 'messageViewer.planPrompt.placeholder'
+  | 'messageViewer.planPrompt.saved'
+  | 'messageViewer.planPrompt.saving'
+  | 'messageViewer.planPrompt.title'
   | 'messageViewer.priorContext'
   | 'messageViewer.refresh'
   | 'messageViewer.renderError'
