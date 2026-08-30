@@ -3,8 +3,6 @@ import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useSt
 import {
   Folder,
   Database,
-  ChevronDown,
-  ChevronRight,
   List,
   FolderTree,
   GitBranch,
@@ -13,6 +11,7 @@ import {
   PanelLeft,
   RotateCcw,
   Search,
+  Filter,
   X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -20,10 +19,13 @@ import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { getLocale } from "../../utils/time";
 import { ProjectContextMenu } from "../ProjectContextMenu";
 import { useProjectTreeState } from "./hooks/useProjectTreeState";
@@ -46,16 +48,6 @@ import {
 } from "../../utils/providers";
 
 type ProviderTabId = "all" | ProviderId;
-
-const PROVIDER_FILTERS_OPEN_STORAGE_KEY = "projectTree.providerFiltersOpen";
-
-const loadProviderFiltersOpenState = () => {
-  try {
-    return localStorage.getItem(PROVIDER_FILTERS_OPEN_STORAGE_KEY) === "true";
-  } catch {
-    return false;
-  }
-};
 
 export const ProjectTree: React.FC<ProjectTreeProps> = ({
   projects,
@@ -134,21 +126,16 @@ export const ProjectTree: React.FC<ProjectTreeProps> = ({
   } = useProjectTreeState(groupingMode);
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [areProviderFiltersOpen, setAreProviderFiltersOpen] = useState(
-    loadProviderFiltersOpenState
-  );
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [areProviderFiltersOpen, setAreProviderFiltersOpen] = useState(false);
   const searchInputId = React.useId();
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        PROVIDER_FILTERS_OPEN_STORAGE_KEY,
-        String(areProviderFiltersOpen)
-      );
-    } catch {
-      // localStorage may be unavailable; the collapsed default still works.
+    if (searchOpen) {
+      searchInputRef.current?.focus();
     }
-  }, [areProviderFiltersOpen]);
+  }, [searchOpen]);
 
   // Wrap session select to also close mobile drawer
   const handleSessionSelect = useCallback(
@@ -246,17 +233,6 @@ export const ProjectTree: React.FC<ProjectTreeProps> = ({
       ? `${labels.join(", ")} +${remainingCount}`
       : labels.join(", ");
   }, [isAllProvidersSelected, selectedProviderFilters, t]);
-
-  const providerFilterCount = useMemo(
-    () =>
-      isAllProvidersSelected
-        ? providerCounts.all
-        : selectedProviderFilters.reduce(
-            (count, providerId) => count + providerCounts[providerId],
-            0
-          ),
-    [isAllProvidersSelected, providerCounts, selectedProviderFilters]
-  );
 
   const matchesProviderFilter = useCallback(
     (project: (typeof projects)[number]) =>
@@ -963,145 +939,146 @@ export const ProjectTree: React.FC<ProjectTreeProps> = ({
               </span>
             </div>
           </div>
-          <Collapsible
-            open={areProviderFiltersOpen}
-            onOpenChange={setAreProviderFiltersOpen}
-            className="mt-2"
+        </div>
+
+        {/* Compact toolbar: Global Stats · Provider filter · Search */}
+        <div className="flex items-center gap-1 px-3 py-1.5 border-b border-accent/10">
+          {/* Global Stats */}
+          <button
+            onClick={handleGlobalStatsClick}
+            className={cn(
+              "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors",
+              isViewingGlobalStats
+                ? "bg-accent/20 text-accent"
+                : "text-muted-foreground hover:bg-accent/10 hover:text-accent"
+            )}
+            aria-label={t("project.globalStats")}
+            title={t("project.globalStats")}
           >
-            <div className="flex items-center gap-1.5">
-              <CollapsibleTrigger asChild>
-                <button
-                  type="button"
-                  className={cn(
-                    "flex min-w-0 flex-1 items-center gap-1.5 rounded-md border px-2 py-1",
-                    "bg-muted/30 text-left text-2xs font-medium text-muted-foreground transition-colors",
-                    "hover:bg-accent/8 hover:text-accent focus:outline-none focus:ring-1 focus:ring-accent/40"
-                  )}
-                  title={providerFilterSummary}
-                  aria-label={`${areProviderFiltersOpen
-                    ? t("common.collapse", "Collapse")
-                    : t("common.expand", "Expand")}: ${providerFilterSummary} (${providerFilterCount})`}
-                >
-                  {areProviderFiltersOpen ? (
-                    <ChevronDown className="h-3 w-3 shrink-0" />
-                  ) : (
-                    <ChevronRight className="h-3 w-3 shrink-0" />
-                  )}
-                  <span className="min-w-0 flex-1 truncate">
-                    {providerFilterSummary}
-                  </span>
-                  <span className="rounded bg-accent/15 px-1 py-0.5 font-mono text-px10 leading-none text-accent">
-                    {providerFilterCount}
-                  </span>
-                </button>
-              </CollapsibleTrigger>
+            <Database className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Provider filter dropdown */}
+          <DropdownMenu open={areProviderFiltersOpen} onOpenChange={setAreProviderFiltersOpen}>
+            <DropdownMenuTrigger asChild>
               <button
-                onClick={() => {
+                className={cn(
+                  "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors",
+                  !isAllProvidersSelected
+                    ? "bg-accent/15 text-accent"
+                    : "text-muted-foreground hover:bg-accent/10 hover:text-accent"
+                )}
+                aria-label={providerFilterSummary}
+                title={providerFilterSummary}
+              >
+                <Filter className="w-3.5 h-3.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-44">
+              {providerTabs.map((tab) => {
+                const isActive = tab.id === "all"
+                  ? isAllProvidersSelected
+                  : !isAllProvidersSelected && selectedProviderFilters.includes(tab.id);
+                const isDisabled = tab.id !== "all" && !selectableProviderIds.includes(tab.id);
+
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={tab.id}
+                    checked={isActive}
+                    disabled={isDisabled}
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      void handleProviderTabClick(tab.id);
+                    }}
+                    className="flex items-center justify-between gap-2"
+                  >
+                    <span className="truncate">{tab.label}</span>
+                    <span
+                      className={cn(
+                        "rounded px-1 py-0.5 font-mono text-px10 leading-none",
+                        isActive ? "bg-accent/20 text-accent" : "bg-muted text-muted-foreground"
+                      )}
+                    >
+                      {tab.count}
+                    </span>
+                  </DropdownMenuCheckboxItem>
+                );
+              })}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
                   void applyProviderSelection(selectableProviderIds);
                 }}
                 disabled={isAllProvidersSelected}
-                className={cn(
-                  "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border text-muted-foreground transition-colors",
-                  isAllProvidersSelected
-                    ? "border-transparent bg-muted/20 text-muted-foreground/50 cursor-not-allowed"
-                    : "border-transparent bg-muted/30 hover:bg-accent/8 hover:text-accent"
-                )}
-                title={t("project.resetProviderFilters", "Reset")}
-                aria-label={t("project.resetProviderFilters", "Reset")}
               >
-                <RotateCcw className="w-3 h-3" />
-              </button>
-            </div>
-            <CollapsibleContent>
-              <div className="mt-2 space-y-2 max-h-52 overflow-y-auto pr-1">
-                <button
-                  type="button"
-                  onClick={handleDiscoverProviders}
-                  disabled={isDetectingProviders || isLoadingProjects}
-                  className={cn(
-                    "inline-flex w-full items-center justify-center gap-1.5 rounded-md border px-2 py-1.5 text-2xs font-medium transition-colors",
-                    isDetectingProviders || isLoadingProjects
-                      ? "cursor-not-allowed border-transparent bg-muted/20 text-muted-foreground/50"
-                      : "border-accent/20 bg-accent/5 text-accent hover:bg-accent/10"
-                  )}
-                  title={t("project.discoverProviders", "Find other providers")}
-                  aria-label={t("project.discoverProviders", "Find other providers")}
-                >
-                  <Search className="h-3 w-3" aria-hidden="true" />
-                  <span>
-                    {isDetectingProviders || isLoadingProjects
-                      ? t("project.discoveringProviders", "Searching for providers...")
-                      : t("project.discoverProviders", "Find other providers")}
-                  </span>
-                </button>
-                <div className="flex flex-wrap items-center gap-1">
-                  {providerTabs.map((tab) => {
-                    const isActive = tab.id === "all"
-                      ? isAllProvidersSelected
-                      : !isAllProvidersSelected && selectedProviderFilters.includes(tab.id);
-                    const isDisabled = tab.id !== "all" && !selectableProviderIds.includes(tab.id);
+                <RotateCcw className="mr-2 h-3 w-3" />
+                {t("project.resetProviderFilters", "Reset")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  void handleDiscoverProviders();
+                }}
+                disabled={isDetectingProviders || isLoadingProjects}
+              >
+                <Search className="mr-2 h-3 w-3" />
+                {isDetectingProviders || isLoadingProjects
+                  ? t("project.discoveringProviders", "Searching for providers...")
+                  : t("project.discoverProviders", "Find other providers")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={() => {
-                          void handleProviderTabClick(tab.id);
-                        }}
-                        disabled={isDisabled}
-                        className={cn(
-                          "inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-2xs font-medium transition-colors",
-                          isDisabled
-                            ? "bg-muted/20 text-muted-foreground/50 border-transparent cursor-not-allowed"
-                            : isActive
-                            ? "bg-accent/15 text-accent border-accent/30"
-                            : "bg-muted/30 text-muted-foreground border-transparent hover:bg-accent/8 hover:text-accent"
-                        )}
-                        title={tab.label}
-                      >
-                        <span>{tab.label}</span>
-                        <span
-                          className={cn(
-                            "px-1 py-0.5 rounded text-px10 font-mono leading-none",
-                            isActive ? "bg-accent/20 text-accent" : "bg-muted text-muted-foreground"
-                          )}
-                        >
-                          {tab.count}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        </div>
-
-        {/* Search */}
-        <div className="px-3 py-2 border-b border-accent/10">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" aria-hidden="true" focusable="false" />
-            <label htmlFor={searchInputId} className="sr-only">
-              {t("project.searchPlaceholder", "Search projects...")}
-            </label>
-            <input
-              id={searchInputId}
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder={t("project.searchPlaceholder", "Search projects...")}
-              className="w-full pl-8 pr-8 py-1.5 text-xs bg-muted/30 border border-transparent rounded-md placeholder:text-muted-foreground/40 focus:outline-none focus:border-accent/30 focus:bg-muted/50 transition-colors"
-            />
-            {searchTerm && (
+          {/* Search: icon-only toggle that expands inline */}
+          {searchOpen || searchTerm ? (
+            <div className="relative flex-1 min-w-0">
+              <Search
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50"
+                aria-hidden="true"
+                focusable="false"
+              />
+              <label htmlFor={searchInputId} className="sr-only">
+                {t("project.searchPlaceholder", "Search projects...")}
+              </label>
+              <input
+                id={searchInputId}
+                ref={searchInputRef}
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onBlur={() => {
+                  if (!searchTerm) setSearchOpen(false);
+                }}
+                placeholder={t("project.searchPlaceholder", "Search projects...")}
+                className="w-full pl-7 pr-7 py-1 text-xs bg-muted/30 border border-transparent rounded-md placeholder:text-muted-foreground/40 focus:outline-none focus:border-accent/30 focus:bg-muted/50 transition-colors"
+              />
               <button
                 type="button"
-                onClick={() => setSearchTerm("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                onClick={() => {
+                  setSearchTerm("");
+                  setSearchOpen(false);
+                }}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground/50 hover:text-muted-foreground transition-colors"
                 aria-label={t("common.clear", "Clear")}
               >
                 <X className="w-3 h-3" />
               </button>
-            )}
-          </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className={cn(
+                "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors",
+                "text-muted-foreground hover:bg-accent/10 hover:text-accent"
+              )}
+              aria-label={t("project.searchPlaceholder", "Search projects...")}
+              title={t("project.searchPlaceholder", "Search projects...")}
+            >
+              <Search className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
         {/* Projects List */}
@@ -1146,46 +1123,6 @@ export const ProjectTree: React.FC<ProjectTreeProps> = ({
               }}
               className="space-y-0.5 animate-stagger"
             >
-              {/* Global Stats Button */}
-              <button
-                onClick={handleGlobalStatsClick}
-                role="treeitem"
-                data-tree-node="global"
-                aria-level={1}
-                aria-selected={isViewingGlobalStats}
-                tabIndex={-1}
-                className={cn(
-                  "sidebar-item w-full flex items-center gap-3 mx-2 group",
-                  "text-left transition-all duration-300",
-                  isViewingGlobalStats && "active"
-                )}
-                style={{ width: "calc(100% - 16px)" }}
-              >
-                <div
-                  className={cn(
-                    "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300",
-                    "bg-accent/10 text-accent",
-                    "group-hover:bg-accent/20 group-hover:shadow-sm group-hover:shadow-accent/20",
-                    isViewingGlobalStats && "bg-accent/20 shadow-glow"
-                  )}
-                >
-                  <span title={t("project.globalStats")}>
-                    <Database className="w-4 h-4 transition-transform group-hover:scale-110" />
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-sidebar-foreground">
-                    {t("project.globalStats")}
-                  </div>
-                  <div className="text-2xs text-muted-foreground">
-                    {t("project.globalStatsDescription")}
-                  </div>
-                </div>
-              </button>
-
-              {/* Divider */}
-              <div className="my-2 mx-4 h-px bg-sidebar-border" />
-
               {/* Grouped Project List */}
               <GroupedProjectList
                 groupingMode={groupingMode}

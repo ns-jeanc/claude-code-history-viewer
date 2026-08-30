@@ -1,5 +1,5 @@
 // src/components/ProjectTree/components/SessionList.tsx
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FixedSizeList as List } from "react-window";
 import { Search, X, SortDesc, SortAsc, Loader2, ListChecks } from "lucide-react";
@@ -113,29 +113,57 @@ const SessionListControls: React.FC<SessionListControlsProps> = ({
   onToggleSelectionMode,
 }) => {
   const { t } = useTranslation();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (searchOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [searchOpen]);
 
   return (
     <div className="flex flex-col gap-1.5 px-2 py-1.5 border-b border-border/30">
       {/* Search + Sort */}
       <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
-          <Input
-            placeholder={t("session.filter.searchPlaceholder")}
-            value={searchQuery}
-            onChange={(e) => onSearchQueryChange(e.target.value)}
-            className="h-7 pl-7 pr-7 text-xs"
-          />
-          {searchQuery && (
+        {searchOpen || searchQuery ? (
+          <div className="relative flex-1">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+            <Input
+              ref={searchInputRef}
+              placeholder={t("session.filter.searchPlaceholder")}
+              value={searchQuery}
+              onChange={(e) => onSearchQueryChange(e.target.value)}
+              onBlur={() => {
+                if (!searchQuery) setSearchOpen(false);
+              }}
+              className="h-7 pl-7 pr-7 text-xs"
+            />
             <button
-              onClick={() => onSearchQueryChange("")}
+              onClick={() => {
+                onSearchQueryChange("");
+                setSearchOpen(false);
+              }}
               className="absolute right-2 top-1/2 -translate-y-1/2"
               aria-label={t("session.filter.clearSearch")}
             >
               <X className="w-3 h-3 text-muted-foreground hover:text-foreground" />
             </button>
-          )}
-        </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            className={cn(
+              "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors",
+              "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+            )}
+            aria-label={t("session.filter.searchPlaceholder")}
+            title={t("session.filter.searchPlaceholder")}
+          >
+            <Search className="w-3.5 h-3.5" />
+          </button>
+        )}
         <button
           onClick={onToggleSelectionMode}
           aria-pressed={isSelectionMode}

@@ -153,6 +153,19 @@ const mockSessions = [
   }),
 ];
 
+// The session search input is collapsed behind an icon-only toggle by default.
+// Click the toggle to expand it, then return the now-mounted input.
+const openSearchInput = () => {
+  try {
+    return screen.getByPlaceholderText("session.filter.searchPlaceholder");
+  } catch {
+    fireEvent.click(
+      screen.getByRole("button", { name: "session.filter.searchPlaceholder" })
+    );
+    return screen.getByPlaceholderText("session.filter.searchPlaceholder");
+  }
+};
+
 describe("SessionList", () => {
   const defaultProps = {
     sessions: mockSessions,
@@ -237,7 +250,7 @@ describe("SessionList", () => {
     it("should filter sessions by search query in summary", () => {
       render(<SessionList {...defaultProps} />);
 
-      const searchInput = screen.getByPlaceholderText("session.filter.searchPlaceholder");
+      const searchInput = openSearchInput();
       fireEvent.change(searchInput, { target: { value: "React" } });
 
       // Only session-1 should be visible
@@ -249,7 +262,7 @@ describe("SessionList", () => {
     it("should filter sessions by search query in session_id", () => {
       render(<SessionList {...defaultProps} />);
 
-      const searchInput = screen.getByPlaceholderText("session.filter.searchPlaceholder");
+      const searchInput = openSearchInput();
       fireEvent.change(searchInput, { target: { value: "session-2" } });
 
       // Only session-2 should be visible
@@ -261,7 +274,7 @@ describe("SessionList", () => {
     it("should be case insensitive when searching", () => {
       render(<SessionList {...defaultProps} />);
 
-      const searchInput = screen.getByPlaceholderText("session.filter.searchPlaceholder");
+      const searchInput = openSearchInput();
       fireEvent.change(searchInput, { target: { value: "TYPESCRIPT" } });
 
       // session-2 should be visible (TypeScript)
@@ -272,7 +285,7 @@ describe("SessionList", () => {
     it("should clear search when clear button is clicked", () => {
       render(<SessionList {...defaultProps} />);
 
-      const searchInput = screen.getByPlaceholderText("session.filter.searchPlaceholder");
+      const searchInput = openSearchInput();
       fireEvent.change(searchInput, { target: { value: "React" } });
 
       // Click clear button
@@ -284,14 +297,14 @@ describe("SessionList", () => {
       expect(screen.getByTestId("session-item-session-2")).toBeInTheDocument();
       expect(screen.getByTestId("session-item-session-3")).toBeInTheDocument();
 
-      // Input should be empty
-      expect(searchInput).toHaveValue("");
+      // Input should be empty (re-opened — clearing collapses the input)
+      expect(openSearchInput()).toHaveValue("");
     });
 
     it("should show no results message when search has no matches", () => {
       render(<SessionList {...defaultProps} />);
 
-      const searchInput = screen.getByPlaceholderText("session.filter.searchPlaceholder");
+      const searchInput = openSearchInput();
       fireEvent.change(searchInput, { target: { value: "nonexistent" } });
 
       expect(screen.getByText("session.filter.noResults")).toBeInTheDocument();
@@ -307,7 +320,7 @@ describe("SessionList", () => {
     it("should show clear button when search has text", () => {
       render(<SessionList {...defaultProps} />);
 
-      const searchInput = screen.getByPlaceholderText("session.filter.searchPlaceholder");
+      const searchInput = openSearchInput();
       fireEvent.change(searchInput, { target: { value: "test" } });
 
       expect(screen.getByRole("button", { name: /clear/i })).toBeInTheDocument();
@@ -326,7 +339,7 @@ describe("SessionList", () => {
 
       render(<SessionList {...defaultProps} />);
 
-      const searchInput = screen.getByPlaceholderText("session.filter.searchPlaceholder");
+      const searchInput = openSearchInput();
       fireEvent.change(searchInput, { target: { value: "Debug" } });
 
       // session-3 should be found via its customName "My Debug Session"
@@ -346,7 +359,7 @@ describe("SessionList", () => {
 
       render(<SessionList {...defaultProps} />);
 
-      const searchInput = screen.getByPlaceholderText("session.filter.searchPlaceholder");
+      const searchInput = openSearchInput();
       // Search by original summary "React" - should still match session-1
       fireEvent.change(searchInput, { target: { value: "React" } });
 
@@ -364,7 +377,7 @@ describe("SessionList", () => {
 
       render(<SessionList {...defaultProps} />);
 
-      const searchInput = screen.getByPlaceholderText("session.filter.searchPlaceholder");
+      const searchInput = openSearchInput();
       fireEvent.change(searchInput, { target: { value: "PRODUCTION" } });
 
       expect(screen.getByTestId("session-item-session-2")).toBeInTheDocument();
@@ -378,14 +391,14 @@ describe("SessionList", () => {
       const fewSessions = [mockSessions[0], mockSessions[1]];
       render(<SessionList {...defaultProps} sessions={fewSessions} />);
 
-      expect(screen.queryByPlaceholderText("session.filter.searchPlaceholder")).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "session.filter.searchPlaceholder" })).not.toBeInTheDocument();
       expect(screen.queryByRole("button", { name: /sort/i })).not.toBeInTheDocument();
     });
 
     it("should show controls when there are 3 or more sessions", () => {
       render(<SessionList {...defaultProps} />);
 
-      expect(screen.getByPlaceholderText("session.filter.searchPlaceholder")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "session.filter.searchPlaceholder" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /sort/i })).toBeInTheDocument();
     });
   });
@@ -413,7 +426,7 @@ describe("SessionList", () => {
       render(<SessionList {...defaultProps} sessions={sessions} />);
 
       // Search for "Testing"
-      const searchInput = screen.getByPlaceholderText("session.filter.searchPlaceholder");
+      const searchInput = openSearchInput();
       fireEvent.change(searchInput, { target: { value: "Testing" } });
 
       const sessionItems = screen.getAllByTestId(/session-item-/);
@@ -446,7 +459,7 @@ describe("SessionList", () => {
       render(<SessionList {...defaultProps} sessions={sessions} />);
 
       // Search for "Testing"
-      const searchInput = screen.getByPlaceholderText("session.filter.searchPlaceholder");
+      const searchInput = openSearchInput();
       fireEvent.change(searchInput, { target: { value: "Testing" } });
 
       // Toggle to oldest first
@@ -469,7 +482,7 @@ describe("SessionList", () => {
       fireEvent.click(sortButton);
 
       // Search for "session"
-      const searchInput = screen.getByPlaceholderText("session.filter.searchPlaceholder");
+      const searchInput = openSearchInput();
       fireEvent.change(searchInput, { target: { value: "session" } });
 
       const sessionItems = screen.getAllByTestId(/session-item-/);
