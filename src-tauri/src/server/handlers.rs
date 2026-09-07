@@ -1143,6 +1143,12 @@ pub async fn update_session_metadata(
     State(state): State<Arc<AppState>>,
     Json(p): Json<UpdateSessionMetadataParams>,
 ) -> Result<Json<Value>, ApiError> {
+    // Cold cache must load from disk first, else this mutation would persist
+    // an empty default over the existing user-data.json (data loss).
+    commands::metadata::ensure_cache_loaded(&state.metadata)
+        .await
+        .map_err(ApiError::from)?;
+
     let metadata_to_save = {
         let mut cached = state
             .metadata
@@ -1173,6 +1179,9 @@ pub async fn update_project_metadata(
     Json(p): Json<UpdateProjectMetadataParams>,
 ) -> Result<Json<Value>, ApiError> {
     commands::metadata::validate_project_metadata_key(&p.project_path).map_err(ApiError::from)?;
+    commands::metadata::ensure_cache_loaded(&state.metadata)
+        .await
+        .map_err(ApiError::from)?;
 
     let metadata_to_save = {
         let mut cached = state
@@ -1209,6 +1218,10 @@ pub async fn update_user_settings(
     Json(p): Json<UpdateUserSettingsParams>,
 ) -> Result<Json<Value>, ApiError> {
     let settings = p.settings;
+    commands::metadata::ensure_cache_loaded(&state.metadata)
+        .await
+        .map_err(ApiError::from)?;
+
     let metadata_to_save = {
         let mut cached = state
             .metadata

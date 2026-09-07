@@ -116,6 +116,51 @@ pub async fn load_user_metadata(state: State<'_, MetadataState>) -> Result<UserM
     Ok(metadata)
 }
 
+/// Ensure the metadata cache is populated, loading from disk on a cold cache.
+///
+/// The update commands mutate the cached copy and then persist the *entire*
+/// structure. Without this, a mutation arriving before the first
+/// `load_user_metadata` (e.g. right after a server restart) would initialize
+/// the cache with an empty default and overwrite `user-data.json`, wiping
+/// every entry already on disk. A parse error fails the mutation rather than
+/// falling back to defaults — failing closed never destroys data.
+pub(crate) async fn ensure_cache_loaded(state: &MetadataState) -> Result<(), String> {
+    let needs_load = {
+        let cached = state
+            .metadata
+            .lock()
+            .map_err(|e| format!("Failed to lock metadata: {e}"))?;
+        cached.is_none()
+    };
+    if !needs_load {
+        return Ok(());
+    }
+
+    let path = get_user_data_path()?;
+    let loaded = tauri::async_runtime::spawn_blocking(move || {
+        if path.exists() {
+            let content = fs::read_to_string(&path)
+                .map_err(|e| format!("Failed to read metadata file: {e}"))?;
+            serde_json::from_str(&content).map_err(|e| format!("Failed to parse metadata: {e}"))
+        } else {
+            Ok(UserMetadata::new())
+        }
+    })
+    .await
+    .map_err(|e| format!("Task join error: {e}"))??;
+
+    // Another caller may have populated the cache while the disk read was in
+    // flight; keep whichever got there first.
+    let mut cached = state
+        .metadata
+        .lock()
+        .map_err(|e| format!("Failed to lock metadata: {e}"))?;
+    if cached.is_none() {
+        *cached = Some(loaded);
+    }
+    Ok(())
+}
+
 /// Internal helper to save metadata to disk (blocking)
 pub(crate) fn save_metadata_to_disk(metadata: &UserMetadata) -> Result<(), String> {
     ensure_metadata_folder()?;
@@ -169,6 +214,8 @@ pub async fn update_session_metadata(
     update: SessionMetadata,
     state: State<'_, MetadataState>,
 ) -> Result<UserMetadata, String> {
+    ensure_cache_loaded(&state).await?;
+
     // Perform quick in-memory mutation while holding lock, then release
     let metadata_to_save = {
         let mut cached = state
@@ -207,6 +254,8 @@ pub async fn update_project_metadata(
     // Validate that project path is absolute
     validate_project_metadata_key(&project_path)?;
 
+    ensure_cache_loaded(&state).await?;
+
     // Perform quick in-memory mutation while holding lock, then release
     let metadata_to_save = {
         let mut cached = state
@@ -241,6 +290,8 @@ pub async fn update_user_settings(
     settings: UserSettings,
     state: State<'_, MetadataState>,
 ) -> Result<UserMetadata, String> {
+    ensure_cache_loaded(&state).await?;
+
     // Perform quick in-memory mutation while holding lock, then release
     let metadata_to_save = {
         let mut cached = state
@@ -373,6 +424,68 @@ mod tests {
         assert_eq!(loaded.version, metadata.version);
 
         drop(temp);
+    }
+
+    #[tokio::test]
+    async fn test_cold_cache_loads_disk_entries_before_mutation() {
+        let (_guard, temp) = setup_test_env();
+        let folder = temp.path().join(".claude-history-viewer");
+        fs::create_dir_all(&folder).unwrap();
+        let path = folder.join("user-data.json");
+
+        // Existing on-disk metadata with a renamed session
+        let mut on_disk = UserMetadata::new();
+        on_disk.sessions.insert(
+            "existing".to_string(),
+            SessionMetadata {
+                custom_name: Some("My Rename".to_string()),
+                ..Default::default()
+            },
+        );
+        fs::write(&path, serde_json::to_string_pretty(&on_disk).unwrap()).unwrap();
+
+        // Cold cache: a mutation arriving before any load_user_metadata must
+        // not wipe the on-disk entries (regression: it used to overwrite the
+        // file with an empty default plus only the mutated session).
+        let state = MetadataState::default();
+        ensure_cache_loaded(&state).await.unwrap();
+        {
+            let mut cached = state.metadata.lock().unwrap();
+            let metadata = cached.get_or_insert_with(UserMetadata::new);
+            metadata.sessions.insert(
+                "new".to_string(),
+                SessionMetadata {
+                    pinned: Some(true),
+                    ..Default::default()
+                },
+            );
+        }
+
+        let cached = state.metadata.lock().unwrap();
+        let m = cached.as_ref().unwrap();
+        assert_eq!(
+            m.sessions
+                .get("existing")
+                .and_then(|s| s.custom_name.as_deref()),
+            Some("My Rename")
+        );
+        assert_eq!(m.sessions.get("new").and_then(|s| s.pinned), Some(true));
+    }
+
+    #[tokio::test]
+    async fn test_cold_cache_parse_error_fails_closed() {
+        let (_guard, temp) = setup_test_env();
+        let folder = temp.path().join(".claude-history-viewer");
+        fs::create_dir_all(&folder).unwrap();
+        let path = folder.join("user-data.json");
+        fs::write(&path, b"not json").unwrap();
+
+        // A corrupt file must fail the mutation rather than overwrite the
+        // file with defaults.
+        let state = MetadataState::default();
+        assert!(ensure_cache_loaded(&state).await.is_err());
+        assert!(state.metadata.lock().unwrap().is_none());
+        assert_eq!(fs::read_to_string(&path).unwrap(), "not json");
     }
 
     #[test]
