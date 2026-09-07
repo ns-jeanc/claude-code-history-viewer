@@ -7,9 +7,12 @@ services:
     ports:
       - "127.0.0.1:3727:3727"
     volumes:
-      - ${HOME}/.claude:/home/cchv/.claude:ro
-      - ${HOME}/.codex:/home/cchv/.codex:ro
-      - ${HOME}/.local/share/opencode:/home/cchv/.local/share/opencode:ro
+      # Session sources are mounted read-write so the UI's session delete /
+      # rename features work; note deletes bypass the trash inside a container
+      # (permanent removal).
+      - ${HOME}/.claude:/home/cchv/.claude
+      - ${HOME}/.codex:/home/cchv/.codex
+      - ${HOME}/.local/share/opencode:/home/cchv/.local/share/opencode
       # Writable app data (user-data.json, token, settings) — bind-mounted to
       # host so it survives container recreation (docker compose up --build).
       - ${HOME}/.claude-history-viewer:/home/cchv/.claude-history-viewer
