@@ -27,6 +27,8 @@ export interface SettingsSliceState {
   updateSettings: UpdateSettings;
   sessionSortOrder: SessionSortOrder;
   sessionEntrypointFilter: SessionEntrypointFilter;
+  /** When true, hidden sessions are included in the session list ("show all") */
+  showHiddenSessions: boolean;
 }
 
 export interface SettingsSliceActions {
@@ -43,6 +45,7 @@ export interface SettingsSliceActions {
   postponeUpdate: () => Promise<void>;
   setSessionSortOrder: (order: SessionSortOrder) => Promise<void>;
   setSessionEntrypointFilter: (filter: SessionEntrypointFilter) => Promise<void>;
+  setShowHiddenSessions: (show: boolean) => Promise<void>;
 }
 
 export type SettingsSlice = SettingsSliceState & SettingsSliceActions;
@@ -70,6 +73,7 @@ const initialSettingsState: SettingsSliceState = {
   updateSettings: DEFAULT_UPDATE_SETTINGS,
   sessionSortOrder: "newest",
   sessionEntrypointFilter: "all",
+  showHiddenSessions: false,
 };
 
 // ============================================================================
@@ -165,6 +169,12 @@ export const createSettingsSlice: StateCreator<
         set({ sessionEntrypointFilter: savedEntrypointFilter });
       }
 
+      // Load show-hidden-sessions toggle
+      const savedShowHidden = await store.get<boolean>("showHiddenSessions");
+      if (savedShowHidden === true) {
+        set({ showHiddenSessions: true });
+      }
+
       const savedFontScale = await store.get<number>("fontScale");
       const savedHighContrast = await store.get<boolean>("highContrast");
       set({
@@ -240,6 +250,22 @@ export const createSettingsSlice: StateCreator<
     } catch (error) {
       console.error("Failed to save session source filter:", error);
       toast.error("Failed to save session source filter");
+    }
+  },
+
+  setShowHiddenSessions: async (show: boolean) => {
+    set({ showHiddenSessions: show });
+
+    try {
+      const store = await storageAdapter.load("settings.json", {
+        autoSave: false,
+        defaults: {},
+      });
+      await store.set("showHiddenSessions", show);
+      await store.save();
+    } catch (error) {
+      console.error("Failed to save show-hidden-sessions setting:", error);
+      toast.error("Failed to save show hidden sessions setting");
     }
   },
 });

@@ -8,6 +8,10 @@ import {
   FileText,
   FolderOpen,
   Play,
+  Pin,
+  PinOff,
+  Eye,
+  EyeOff,
   Trash2,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -23,6 +27,8 @@ interface SessionContextMenuProps {
   supportsSessionDeletion: boolean;
   supportsRevealInFinder: boolean;
   providerId: string;
+  isPinned: boolean;
+  isHidden: boolean;
   onClose: () => void;
   onRenameClick: (e: React.MouseEvent) => void;
   onResetCustomName: () => void;
@@ -31,6 +37,8 @@ interface SessionContextMenuProps {
   onCopyResumeCommand: (e: React.MouseEvent) => void;
   onCopyFilePath: (e: React.MouseEvent) => void;
   onRevealInFinder: (e: React.MouseEvent) => void;
+  onTogglePin: (e: React.MouseEvent) => void;
+  onToggleHidden: (e: React.MouseEvent) => void;
   onDeleteSession: (e: React.MouseEvent) => void;
 }
 
@@ -43,6 +51,8 @@ export const SessionContextMenu: React.FC<SessionContextMenuProps> = ({
   supportsSessionDeletion,
   supportsRevealInFinder,
   providerId,
+  isPinned,
+  isHidden,
   onClose,
   onRenameClick,
   onResetCustomName,
@@ -51,6 +61,8 @@ export const SessionContextMenu: React.FC<SessionContextMenuProps> = ({
   onCopyResumeCommand,
   onCopyFilePath,
   onRevealInFinder,
+  onTogglePin,
+  onToggleHidden,
   onDeleteSession,
 }) => {
   const { t } = useTranslation();
@@ -197,6 +209,30 @@ export const SessionContextMenu: React.FC<SessionContextMenuProps> = ({
             <FolderOpen className="w-3.5 h-3.5" />
             <span>{t("session.showJsonlFile", "Show JSONL File")}</span>
           </button>
+        )}
+
+        {!readOnly && (
+          <>
+            <div className="my-1 border-t border-border/50" />
+
+            <button type="button" role="menuitem" onClick={handleAction(onTogglePin)} className={menuItemClass}>
+              {isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+              <span>
+                {isPinned
+                  ? t("session.unpin", "Unpin Session")
+                  : t("session.pin", "Pin Session")}
+              </span>
+            </button>
+
+            <button type="button" role="menuitem" onClick={handleAction(onToggleHidden)} className={menuItemClass}>
+              {isHidden ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              <span>
+                {isHidden
+                  ? t("session.unhide", "Unhide Session")
+                  : t("session.hide", "Hide Session")}
+              </span>
+            </button>
+          </>
         )}
 
         {supportsSessionDeletion && (

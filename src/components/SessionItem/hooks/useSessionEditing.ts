@@ -65,6 +65,10 @@ export function useSessionEditing(session: ClaudeSession) {
     setCustomName,
     hasClaudeCodeName: hasClaudeCodeNameMeta,
     setHasClaudeCodeName,
+    pinned: isPinned,
+    hidden: isHidden,
+    setPinned,
+    setHidden,
   } = useSessionMetadata(session.session_id);
   const hasCustomName = !!customName;
   const hasClaudeCodeNamePattern = /^\[.+?\]\s/.test(localSummary ?? "");
@@ -340,6 +344,34 @@ export function useSessionEditing(session: ClaudeSession) {
     [isDeletingSession]
   );
 
+  const handleTogglePin = useCallback(
+    async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setIsContextMenuOpen(false);
+      try {
+        await setPinned(!isPinned);
+      } catch (error) {
+        console.error("Failed to toggle pin:", error);
+        toast.error(t("session.pinError", "Failed to update pin"));
+      }
+    },
+    [isPinned, setPinned, t]
+  );
+
+  const handleToggleHidden = useCallback(
+    async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setIsContextMenuOpen(false);
+      try {
+        await setHidden(!isHidden);
+      } catch (error) {
+        console.error("Failed to toggle hidden:", error);
+        toast.error(t("session.hideError", "Failed to update visibility"));
+      }
+    },
+    [isHidden, setHidden, t]
+  );
+
   const handleNativeRenameClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -399,6 +431,8 @@ export function useSessionEditing(session: ClaudeSession) {
     supportsRevealInFinder,
     isArchivedCodexSession,
     isServerReadOnly,
+    isPinned,
+    isHidden,
     deleteDialogTitle,
     deleteDialogDescription,
     inputRef,
@@ -421,6 +455,8 @@ export function useSessionEditing(session: ClaudeSession) {
     handleRevealInFinder,
     handleDeleteSession,
     handleConfirmDeleteSession,
+    handleTogglePin,
+    handleToggleHidden,
     handleNativeRenameClick,
     handleNativeRenameSuccess,
   };

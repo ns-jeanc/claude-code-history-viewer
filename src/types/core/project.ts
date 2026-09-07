@@ -28,6 +28,10 @@ export interface SessionMetadata {
   planPrompt?: string;
   /** Whether the session has been renamed via Claude Code native rename (synced with CLI) */
   hasClaudeCodeName?: boolean;
+  /** Whether the session is pinned to the top of the session list */
+  pinned?: boolean;
+  /** Whether the session is hidden from the session list (visible via "show all") */
+  hidden?: boolean;
 }
 
 // ============================================================================
@@ -129,7 +133,9 @@ export const isSessionMetadataEmpty = (metadata: SessionMetadata): boolean => {
     (!metadata.tags || metadata.tags.length === 0) &&
     !metadata.notes &&
     !metadata.planPrompt &&
-    !metadata.hasClaudeCodeName
+    !metadata.hasClaudeCodeName &&
+    !metadata.pinned &&
+    !metadata.hidden
   );
 };
 

@@ -149,6 +149,7 @@ export interface AppStoreState {
   updateSettings: UpdateSettings;
   sessionSortOrder: import("../../types/metadata.types").SessionSortOrder;
   sessionEntrypointFilter: import("../../types/metadata.types").SessionEntrypointFilter;
+  showHiddenSessions: boolean;
 
   // Global stats state
   globalSummary: GlobalStatsSummary | null;

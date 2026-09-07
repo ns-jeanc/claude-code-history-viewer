@@ -256,5 +256,14 @@
   "sessionPicker.title": "セッションを選択",
   "sessionPicker.subtitle": "「{{value}}」に一致するセッションが{{count}}件",
   "sessionPicker.empty": "一致するセッションがありません",
-  "sessionPicker.cancelled": "起動時のセッションヒントをキャンセルしました"
+  "sessionPicker.cancelled": "起動時のセッションヒントをキャンセルしました",
+  "session.pin": "セッションをピン留め",
+  "session.unpin": "ピン留めを解除",
+  "session.pinned": "ピン留め済み",
+  "session.pinError": "ピン留めの更新に失敗しました",
+  "session.hide": "セッションを非表示",
+  "session.unhide": "非表示を解除",
+  "session.hideError": "表示状態の更新に失敗しました",
+  "session.filter.showHidden": "非表示のセッションを表示",
+  "session.filter.hideHidden": "非表示のセッションを隠す"
 }

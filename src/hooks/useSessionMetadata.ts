@@ -82,6 +82,8 @@ export const useSessionMetadata = (sessionId: string) => {
   const notes = sessionMetadata?.notes;
   const planPrompt = sessionMetadata?.planPrompt;
   const hasClaudeCodeName = sessionMetadata?.hasClaudeCodeName ?? false;
+  const pinned = sessionMetadata?.pinned ?? false;
+  const hidden = sessionMetadata?.hidden ?? false;
 
   /**
    * Set or clear custom session name
@@ -182,6 +184,28 @@ export const useSessionMetadata = (sessionId: string) => {
     [sessionId, updateSessionMetadata]
   );
 
+  /**
+   * Set pinned status (pinned sessions sort to the top of the list)
+   * @param value - true to pin, false to unpin
+   */
+  const setPinned = useCallback(
+    async (value: boolean) => {
+      await updateSessionMetadata(sessionId, { pinned: value });
+    },
+    [sessionId, updateSessionMetadata]
+  );
+
+  /**
+   * Set hidden status (hidden sessions only appear when "show all" is on)
+   * @param value - true to hide, false to unhide
+   */
+  const setHidden = useCallback(
+    async (value: boolean) => {
+      await updateSessionMetadata(sessionId, { hidden: value });
+    },
+    [sessionId, updateSessionMetadata]
+  );
+
   return {
     // State
     sessionMetadata,
@@ -191,6 +215,8 @@ export const useSessionMetadata = (sessionId: string) => {
     notes,
     planPrompt,
     hasClaudeCodeName,
+    pinned,
+    hidden,
     isMetadataLoaded,
 
     // Actions
@@ -203,6 +229,8 @@ export const useSessionMetadata = (sessionId: string) => {
     setNotes,
     setPlanPrompt,
     setHasClaudeCodeName,
+    setPinned,
+    setHidden,
   };
 };
 

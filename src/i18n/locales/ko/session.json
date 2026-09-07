@@ -256,5 +256,14 @@
   "sessionPicker.title": "세션 선택",
   "sessionPicker.subtitle": "\"{{value}}\"에 일치하는 세션 {{count}}개",
   "sessionPicker.empty": "일치하는 세션 없음",
-  "sessionPicker.cancelled": "시작 세션 힌트가 취소됨"
+  "sessionPicker.cancelled": "시작 세션 힌트가 취소됨",
+  "session.pin": "세션 고정",
+  "session.unpin": "세션 고정 해제",
+  "session.pinned": "고정됨",
+  "session.pinError": "고정 상태를 변경하지 못했습니다",
+  "session.hide": "세션 숨기기",
+  "session.unhide": "세션 숨기기 해제",
+  "session.hideError": "표시 상태를 변경하지 못했습니다",
+  "session.filter.showHidden": "숨긴 세션 표시",
+  "session.filter.hideHidden": "숨긴 세션 감추기"
 }

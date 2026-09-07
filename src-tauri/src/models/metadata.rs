@@ -162,6 +162,14 @@ pub struct SessionMetadata {
     /// Plan prompt — what the user intends to do next in this session
     #[serde(skip_serializing_if = "Option::is_none")]
     pub plan_prompt: Option<String>,
+
+    /// Whether the session is pinned to the top of the session list
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pinned: Option<bool>,
+
+    /// Whether the session is hidden from the session list (visible via "show all")
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hidden: Option<bool>,
 }
 
 impl SessionMetadata {
@@ -172,6 +180,8 @@ impl SessionMetadata {
             && self.tags.is_empty()
             && self.notes.is_none()
             && self.plan_prompt.is_none()
+            && self.pinned.is_none()
+            && self.hidden.is_none()
     }
 }
 

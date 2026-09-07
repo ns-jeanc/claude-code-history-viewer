@@ -256,5 +256,14 @@
   "sessionPicker.title": "選擇工作階段",
   "sessionPicker.subtitle": "{{count}} 個工作階段符合 \"{{value}}\"",
   "sessionPicker.empty": "沒有符合的工作階段",
-  "sessionPicker.cancelled": "啟動時的工作階段提示已取消"
+  "sessionPicker.cancelled": "啟動時的工作階段提示已取消",
+  "session.pin": "釘選工作階段",
+  "session.unpin": "取消釘選",
+  "session.pinned": "已釘選",
+  "session.pinError": "釘選狀態更新失敗",
+  "session.hide": "隱藏工作階段",
+  "session.unhide": "取消隱藏",
+  "session.hideError": "顯示狀態更新失敗",
+  "session.filter.showHidden": "顯示隱藏的工作階段",
+  "session.filter.hideHidden": "收合隱藏的工作階段"
 }

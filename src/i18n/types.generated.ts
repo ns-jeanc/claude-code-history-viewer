@@ -5,8 +5,8 @@
  * 직접 수정하지 마세요.
  *
  * 생성 명령: pnpm run generate:i18n-types
- * 생성 시간: 2026-08-29T19:09:25.381Z
- * 총 키 개수: 1933
+ * 생성 시간: 2026-09-06T04:51:22.926Z
+ * 총 키 개수: 1942
  * Namespace 수: 11
  */
 
@@ -418,7 +418,7 @@ export type AnalyticsKeys =
   | 'analytics.weeklyActivity';
 
 /**
- * session namespace의 번역 키 (258개)
+ * session namespace의 번역 키 (267개)
  * 파일: locales/{lang}/session.json
  */
 export type SessionKeys =
@@ -547,8 +547,10 @@ export type SessionKeys =
   | 'session.export.markdown'
   | 'session.export.success'
   | 'session.filter.clearSearch'
+  | 'session.filter.hideHidden'
   | 'session.filter.noResults'
   | 'session.filter.searchPlaceholder'
+  | 'session.filter.showHidden'
   | 'session.filter.showingCount'
   | 'session.filter.sortNewestFirst'
   | 'session.filter.sortOldestFirst'
@@ -557,6 +559,8 @@ export type SessionKeys =
   | 'session.filter.source.desktop'
   | 'session.filter.source.label'
   | 'session.filter.source.vscode'
+  | 'session.hide'
+  | 'session.hideError'
   | 'session.id'
   | 'session.interaction.assistantMessage'
   | 'session.interaction.cacheHit'
@@ -626,6 +630,9 @@ export type SessionKeys =
   | 'session.nativeRename.warningCodex'
   | 'session.nativeRename.warningForgeCode'
   | 'session.nativeRename.warningOpenCode'
+  | 'session.pin'
+  | 'session.pinError'
+  | 'session.pinned'
   | 'session.refresh'
   | 'session.refreshAllConversations'
   | 'session.rename'
@@ -676,6 +683,8 @@ export type SessionKeys =
   | 'session.summaryNotFound'
   | 'session.syncError'
   | 'session.title'
+  | 'session.unhide'
+  | 'session.unpin'
   | 'sessionPicker.cancelled'
   | 'sessionPicker.empty'
   | 'sessionPicker.subtitle'
@@ -3079,8 +3088,10 @@ export type TranslationKey =
   | 'session.export.markdown'
   | 'session.export.success'
   | 'session.filter.clearSearch'
+  | 'session.filter.hideHidden'
   | 'session.filter.noResults'
   | 'session.filter.searchPlaceholder'
+  | 'session.filter.showHidden'
   | 'session.filter.showingCount'
   | 'session.filter.sortNewestFirst'
   | 'session.filter.sortOldestFirst'
@@ -3089,6 +3100,8 @@ export type TranslationKey =
   | 'session.filter.source.desktop'
   | 'session.filter.source.label'
   | 'session.filter.source.vscode'
+  | 'session.hide'
+  | 'session.hideError'
   | 'session.id'
   | 'session.interaction.assistantMessage'
   | 'session.interaction.cacheHit'
@@ -3158,6 +3171,9 @@ export type TranslationKey =
   | 'session.nativeRename.warningCodex'
   | 'session.nativeRename.warningForgeCode'
   | 'session.nativeRename.warningOpenCode'
+  | 'session.pin'
+  | 'session.pinError'
+  | 'session.pinned'
   | 'session.refresh'
   | 'session.refreshAllConversations'
   | 'session.rename'
@@ -3208,6 +3224,8 @@ export type TranslationKey =
   | 'session.summaryNotFound'
   | 'session.syncError'
   | 'session.title'
+  | 'session.unhide'
+  | 'session.unpin'
   | 'sessionPicker.cancelled'
   | 'sessionPicker.empty'
   | 'sessionPicker.subtitle'

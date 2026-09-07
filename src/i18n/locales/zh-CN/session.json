@@ -256,5 +256,14 @@
   "sessionPicker.title": "选择会话",
   "sessionPicker.subtitle": "{{count}} 个会话匹配 \"{{value}}\"",
   "sessionPicker.empty": "没有匹配的会话",
-  "sessionPicker.cancelled": "启动会话提示已取消"
+  "sessionPicker.cancelled": "启动会话提示已取消",
+  "session.pin": "置顶会话",
+  "session.unpin": "取消置顶",
+  "session.pinned": "已置顶",
+  "session.pinError": "置顶状态更新失败",
+  "session.hide": "隐藏会话",
+  "session.unhide": "取消隐藏",
+  "session.hideError": "可见性更新失败",
+  "session.filter.showHidden": "显示隐藏的会话",
+  "session.filter.hideHidden": "收起隐藏的会话"
 }

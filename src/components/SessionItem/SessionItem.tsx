@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Pin } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { NativeRenameDialog } from "@/components/NativeRenameDialog";
@@ -90,7 +90,8 @@ export const SessionItem: React.FC<SessionItemProps> = ({
         isSelectionMode && "cursor-pointer select-none",
         highlighted
           ? "bg-accent/15 shadow-sm shadow-accent/10 ring-1 ring-accent/20"
-          : "bg-transparent"
+          : "bg-transparent",
+        editing.isHidden && "opacity-50"
       )}
       style={{ width: "calc(100% - 8px)" }}
       onClick={handleClick}
@@ -136,6 +137,12 @@ export const SessionItem: React.FC<SessionItemProps> = ({
 
         {/* Session Name / Edit Mode */}
         <div className="flex-1 min-w-0 flex items-start gap-1">
+          {editing.isPinned && (
+            <Pin
+              className="w-3 h-3 mt-0.5 shrink-0 fill-accent text-accent"
+              aria-label={t("session.pinned", "Pinned")}
+            />
+          )}
           {isSelectionMode ? (
             <span
               className={cn(
@@ -202,6 +209,8 @@ export const SessionItem: React.FC<SessionItemProps> = ({
           supportsSessionDeletion={editing.supportsSessionDeletion}
           supportsRevealInFinder={editing.supportsRevealInFinder}
           providerId={editing.providerId}
+          isPinned={editing.isPinned}
+          isHidden={editing.isHidden}
           onClose={handleContextMenuClose}
           onRenameClick={editing.handleRenameClick}
           onResetCustomName={() => void editing.resetCustomName()}
@@ -210,6 +219,8 @@ export const SessionItem: React.FC<SessionItemProps> = ({
           onCopyResumeCommand={editing.handleCopyResumeCommand}
           onCopyFilePath={editing.handleCopyFilePath}
           onRevealInFinder={editing.handleRevealInFinder}
+          onTogglePin={(e) => void editing.handleTogglePin(e)}
+          onToggleHidden={(e) => void editing.handleToggleHidden(e)}
           onDeleteSession={editing.handleDeleteSession}
         />
       )}

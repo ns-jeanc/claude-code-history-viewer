@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FixedSizeList as List } from "react-window";
-import { Search, X, SortDesc, SortAsc, Loader2, ListChecks } from "lucide-react";
+import { Search, X, SortDesc, SortAsc, Loader2, ListChecks, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
@@ -95,6 +95,8 @@ interface SessionListControlsProps {
   onEntrypointFilterChange: (filter: SessionEntrypointFilter) => void;
   isSelectionMode: boolean;
   onToggleSelectionMode: () => void;
+  showHiddenSessions: boolean;
+  onToggleShowHidden: () => void;
 }
 
 /**
@@ -111,6 +113,8 @@ const SessionListControls: React.FC<SessionListControlsProps> = ({
   onEntrypointFilterChange,
   isSelectionMode,
   onToggleSelectionMode,
+  showHiddenSessions,
+  onToggleShowHidden,
 }) => {
   const { t } = useTranslation();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -185,6 +189,32 @@ const SessionListControls: React.FC<SessionListControlsProps> = ({
           }
         >
           <ListChecks className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={onToggleShowHidden}
+          aria-pressed={showHiddenSessions}
+          className={cn(
+            "p-1.5 rounded transition-colors",
+            showHiddenSessions
+              ? "bg-accent/15 text-accent"
+              : "hover:bg-muted/50 text-muted-foreground"
+          )}
+          aria-label={
+            showHiddenSessions
+              ? t("session.filter.hideHidden", "Hide hidden sessions")
+              : t("session.filter.showHidden", "Show hidden sessions")
+          }
+          title={
+            showHiddenSessions
+              ? t("session.filter.hideHidden", "Hide hidden sessions")
+              : t("session.filter.showHidden", "Show hidden sessions")
+          }
+        >
+          {showHiddenSessions ? (
+            <Eye className="w-3.5 h-3.5" />
+          ) : (
+            <EyeOff className="w-3.5 h-3.5" />
+          )}
         </button>
         <button
           onClick={onToggleSortOrder}
@@ -265,6 +295,9 @@ export const SessionList: React.FC<SessionListProps> = ({
     sessionEntrypointFilter,
     setSessionEntrypointFilter,
     getSessionDisplayName,
+    showHiddenSessions,
+    setShowHiddenSessions,
+    userMetadata,
   } = useAppStore();
   const isSelectionMode = useAppStore((s) => s.isSessionSelectionMode);
   const sessionSelectionIds = useAppStore((s) => s.sessionSelectionIds);
@@ -284,7 +317,12 @@ export const SessionList: React.FC<SessionListProps> = ({
 
   // Filter and sort sessions
   const filteredAndSortedSessions = useMemo(() => {
-    let result = [...sessions];
+    const sessionMeta = userMetadata.sessions;
+
+    // Hidden sessions only appear when the "show all" (eye) toggle is on
+    let result = showHiddenSessions
+      ? [...sessions]
+      : sessions.filter((s) => !sessionMeta[s.session_id]?.hidden);
 
     // Sort by conversation recency, mirroring the backend
     // `sort_sessions_by_recency`: `last_message_time` (the timestamp of the
@@ -293,7 +331,14 @@ export const SessionList: React.FC<SessionListProps> = ({
     // mtime). Sorting purely by mtime lets a stale session whose JSONL was
     // merely touched/rewritten (e.g. by a resume or branch op) leapfrog
     // genuinely recent sessions — see the cross-project "all sessions" view.
+    // Pinned sessions always rank above unpinned ones regardless of direction.
     result.sort((a, b) => {
+      const aPinned = sessionMeta[a.session_id]?.pinned ? 1 : 0;
+      const bPinned = sessionMeta[b.session_id]?.pinned ? 1 : 0;
+      if (aPinned !== bPinned) {
+        return bPinned - aPinned;
+      }
+
       const aLmt = new Date(a.last_message_time).getTime();
       const bLmt = new Date(b.last_message_time).getTime();
       const aHas = !Number.isNaN(aLmt);
@@ -334,7 +379,7 @@ export const SessionList: React.FC<SessionListProps> = ({
     }
 
     return result;
-  }, [sessions, sessionSortOrder, sessionEntrypointFilter, searchQuery, getSessionDisplayName]);
+  }, [sessions, sessionSortOrder, sessionEntrypointFilter, searchQuery, getSessionDisplayName, showHiddenSessions, userMetadata.sessions]);
 
   // Show controls only if we have enough sessions
   const showControls = sessions.length >= 3 || sessionsTotal >= 3;
@@ -432,6 +477,8 @@ export const SessionList: React.FC<SessionListProps> = ({
       onEntrypointFilterChange={setSessionEntrypointFilter}
       isSelectionMode={isSelectionMode}
       onToggleSelectionMode={toggleSessionSelectionMode}
+      showHiddenSessions={showHiddenSessions}
+      onToggleShowHidden={() => void setShowHiddenSessions(!showHiddenSessions)}
     />
   ) : null;
 

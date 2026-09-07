@@ -82,6 +82,9 @@ interface MockStore {
   sessionEntrypointFilter: MockEntrypointFilter;
   setSessionEntrypointFilter: (filter: MockEntrypointFilter) => void;
   getSessionDisplayName: (sessionId: string, fallbackSummary?: string) => string | undefined;
+  showHiddenSessions: boolean;
+  setShowHiddenSessions: (show: boolean) => void;
+  userMetadata: { sessions: Record<string, { pinned?: boolean; hidden?: boolean }> };
   isSessionSelectionMode: boolean;
   sessionSelectionIds: string[];
   toggleSessionSelectionMode: () => void;
@@ -99,6 +102,9 @@ const useTestStore = create<MockStore>((set) => ({
   sessionEntrypointFilter: 'all',
   setSessionEntrypointFilter: (filter) => set({ sessionEntrypointFilter: filter }),
   getSessionDisplayName: (_sessionId: string, fallbackSummary?: string) => fallbackSummary,
+  showHiddenSessions: false,
+  setShowHiddenSessions: (show) => set({ showHiddenSessions: show }),
+  userMetadata: { sessions: {} },
   isSessionSelectionMode: false,
   sessionSelectionIds: [],
   toggleSessionSelectionMode: () => set({ isSessionSelectionMode: false }),
@@ -181,7 +187,12 @@ describe("SessionList", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset mock store state
-    useTestStore.setState({ sessionSortOrder: 'newest', sessionEntrypointFilter: 'all' });
+    useTestStore.setState({
+      sessionSortOrder: 'newest',
+      sessionEntrypointFilter: 'all',
+      showHiddenSessions: false,
+      userMetadata: { sessions: {} },
+    });
   });
 
   describe("Loading state", () => {
@@ -246,6 +257,57 @@ describe("SessionList", () => {
 
       // Should have SortAsc icon (oldest first)
       expect(sortButton.querySelector("svg")).toBeInTheDocument();
+    });
+  });
+
+  describe("Pin and Hide", () => {
+    it("should sort a pinned session to the top regardless of recency", () => {
+      useTestStore.setState({
+        userMetadata: { sessions: { "session-3": { pinned: true } } },
+      });
+      render(<SessionList {...defaultProps} />);
+
+      const sessionItems = screen.getAllByTestId(/session-item-/);
+
+      // session-3 is the oldest (Feb 3) but pinned → first
+      expect(sessionItems[0]).toHaveAttribute("data-testid", "session-item-session-3");
+      expect(sessionItems[1]).toHaveAttribute("data-testid", "session-item-session-2");
+      expect(sessionItems[2]).toHaveAttribute("data-testid", "session-item-session-1");
+    });
+
+    it("should keep pinned sessions on top in oldest-first order", () => {
+      useTestStore.setState({
+        sessionSortOrder: 'oldest',
+        userMetadata: { sessions: { "session-2": { pinned: true } } },
+      });
+      render(<SessionList {...defaultProps} />);
+
+      const sessionItems = screen.getAllByTestId(/session-item-/);
+
+      expect(sessionItems[0]).toHaveAttribute("data-testid", "session-item-session-2");
+    });
+
+    it("should exclude hidden sessions by default", () => {
+      useTestStore.setState({
+        userMetadata: { sessions: { "session-1": { hidden: true } } },
+      });
+      render(<SessionList {...defaultProps} />);
+
+      expect(screen.queryByTestId("session-item-session-1")).not.toBeInTheDocument();
+      expect(screen.getByTestId("session-item-session-2")).toBeInTheDocument();
+      expect(screen.getByTestId("session-item-session-3")).toBeInTheDocument();
+    });
+
+    it("should show hidden sessions when the show-hidden toggle is on", () => {
+      useTestStore.setState({
+        userMetadata: { sessions: { "session-1": { hidden: true } } },
+      });
+      render(<SessionList {...defaultProps} />);
+
+      const toggle = screen.getByRole("button", { name: "session.filter.showHidden" });
+      fireEvent.click(toggle);
+
+      expect(screen.getByTestId("session-item-session-1")).toBeInTheDocument();
     });
   });
 
