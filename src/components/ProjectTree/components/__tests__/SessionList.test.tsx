@@ -136,18 +136,21 @@ const mockSessions = [
   createMockSession({
     session_id: "session-1",
     summary: "First session about React",
+    last_message_time: "2026-02-04T10:00:00Z",
     last_modified: "2026-02-04T10:00:00Z",
     file_path: "/path/to/session1.jsonl",
   }),
   createMockSession({
     session_id: "session-2",
     summary: "Second session about TypeScript",
+    last_message_time: "2026-02-05T10:00:00Z",
     last_modified: "2026-02-05T10:00:00Z",
     file_path: "/path/to/session2.jsonl",
   }),
   createMockSession({
     session_id: "session-3",
     summary: "Third session about testing",
+    last_message_time: "2026-02-03T10:00:00Z",
     last_modified: "2026-02-03T10:00:00Z",
     file_path: "/path/to/session3.jsonl",
   }),
@@ -409,16 +412,19 @@ describe("SessionList", () => {
         createMockSession({
           session_id: "session-1",
           summary: "Testing A",
+          last_message_time: "2026-02-03T10:00:00Z",
           last_modified: "2026-02-03T10:00:00Z",
         }),
         createMockSession({
           session_id: "session-2",
           summary: "Testing B",
+          last_message_time: "2026-02-05T10:00:00Z",
           last_modified: "2026-02-05T10:00:00Z",
         }),
         createMockSession({
           session_id: "session-3",
           summary: "Different topic",
+          last_message_time: "2026-02-04T10:00:00Z",
           last_modified: "2026-02-04T10:00:00Z",
         }),
       ];
@@ -442,16 +448,19 @@ describe("SessionList", () => {
         createMockSession({
           session_id: "session-1",
           summary: "Testing A",
+          last_message_time: "2026-02-03T10:00:00Z",
           last_modified: "2026-02-03T10:00:00Z",
         }),
         createMockSession({
           session_id: "session-2",
           summary: "Testing B",
+          last_message_time: "2026-02-05T10:00:00Z",
           last_modified: "2026-02-05T10:00:00Z",
         }),
         createMockSession({
           session_id: "session-3",
           summary: "Different topic",
+          last_message_time: "2026-02-04T10:00:00Z",
           last_modified: "2026-02-04T10:00:00Z",
         }),
       ];

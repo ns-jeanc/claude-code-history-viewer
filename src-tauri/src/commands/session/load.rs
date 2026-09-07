@@ -62,7 +62,12 @@ struct SessionMetadataCache {
 // Bumped 10 -> 11: a verifiable folder name now takes priority over the JSONL
 // `cwd` for the project name (handles sessions moved between project folders);
 // stale caches must be invalidated to recompute project_name.
-const CACHE_VERSION: u32 = 11;
+// Bumped 11 -> 12: `last_message_time`/`first_message_time` no longer fall back
+// to `Utc::now()` for sessions with no parseable non-system timestamp — they
+// now use the file mtime. Stale caches may hold a `Utc::now()` value captured
+// at the old parse time, which sorts those sessions as artificially recent;
+// invalidate to recompute.
+const CACHE_VERSION: u32 = 12;
 const DEFAULT_SESSION_PAGE_LIMIT: usize = 250;
 const MAX_SESSION_PAGE_LIMIT: usize = 500;
 
@@ -637,10 +642,17 @@ fn extract_session_metadata_internal(
             file_path: file_path_str,
             project_name,
             message_count,
-            first_message_time: first_timestamp.unwrap_or_else(|| Utc::now().to_rfc3339()),
+            // When the JSONL has no parseable non-system timestamp (e.g. a
+            // near-empty session containing only mode/permission-mode/system
+            // lines), fall back to the file mtime — NOT `Utc::now()`. A
+            // `Utc::now()` fallback makes every such session sort as "just
+            // now", leapfrogging genuinely recent sessions in the recency
+            // sort. `last_modified` is the best available activity proxy and
+            // lets `sort_sessions_by_recency`'s own mtime fallback align.
+            first_message_time: first_timestamp.unwrap_or_else(|| last_modified.clone()),
             last_message_time: last_timestamp
                 .clone()
-                .unwrap_or_else(|| Utc::now().to_rfc3339()),
+                .unwrap_or_else(|| last_modified.clone()),
             last_modified,
             has_tool_use,
             has_errors,
@@ -3305,6 +3317,44 @@ mod tests {
 
         assert!(result.is_ok());
         assert!(result.unwrap().is_empty());
+    }
+
+    /// A session whose only timestamped lines are `system`/`mode`/`last-prompt`
+    /// entries has no parseable *non-system* timestamp. `last_message_time`
+    /// must fall back to the file mtime (`last_modified`), NOT `Utc::now()` —
+    /// otherwise every such near-empty session sorts as "just now" and
+    /// leapfrogs genuinely recent sessions in the recency sort.
+    #[tokio::test]
+    async fn test_no_parseable_timestamp_falls_back_to_file_mtime() {
+        let temp_dir = TempDir::new().unwrap();
+
+        // Mirrors a real near-empty session: mode/permission-mode carry no
+        // timestamp; the system `local_command` line carries one but is
+        // skipped before timestamp extraction; last-prompt is excluded.
+        let content = r#"{"mode":"default","sessionId":"s1","type":"mode"}
+{"permissionMode":"default","sessionId":"s1","type":"permission-mode"}
+{"uuid":"u1","sessionId":"s1","timestamp":"2025-07-23T09:21:37.448Z","type":"system","subtype":"local_command","isMeta":true,"message":{"role":"user","content":"/clear"}}
+{"leafUuid":"u1","sessionId":"s1","type":"last-prompt"}
+"#;
+
+        create_test_jsonl_file(&temp_dir, "near-empty.jsonl", content);
+
+        let result =
+            load_project_sessions(temp_dir.path().to_string_lossy().to_string(), None).await;
+        assert!(result.is_ok());
+        let sessions = result.unwrap();
+        assert_eq!(sessions.len(), 1);
+
+        // The fallback must be the file mtime, captured in `last_modified`,
+        // not a freshly-minted `Utc::now()` (which would differ as a string).
+        assert_eq!(
+            sessions[0].last_message_time, sessions[0].last_modified,
+            "last_message_time should fall back to file mtime, not Utc::now()"
+        );
+        assert!(
+            !sessions[0].last_message_time.is_empty(),
+            "last_message_time must not be empty"
+        );
     }
 
     #[tokio::test]

@@ -286,11 +286,31 @@ export const SessionList: React.FC<SessionListProps> = ({
   const filteredAndSortedSessions = useMemo(() => {
     let result = [...sessions];
 
-    // Sort
+    // Sort by conversation recency, mirroring the backend
+    // `sort_sessions_by_recency`: `last_message_time` (the timestamp of the
+    // last message in the JSONL) takes precedence, and only sessions lacking
+    // a parseable `last_message_time` fall back to `last_modified` (filesystem
+    // mtime). Sorting purely by mtime lets a stale session whose JSONL was
+    // merely touched/rewritten (e.g. by a resume or branch op) leapfrog
+    // genuinely recent sessions — see the cross-project "all sessions" view.
     result.sort((a, b) => {
-      const dateA = new Date(a.last_modified).getTime();
-      const dateB = new Date(b.last_modified).getTime();
-      return sessionSortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+      const aLmt = new Date(a.last_message_time).getTime();
+      const bLmt = new Date(b.last_message_time).getTime();
+      const aHas = !Number.isNaN(aLmt);
+      const bHas = !Number.isNaN(bLmt);
+      let cmp: number;
+      if (aHas && bHas) {
+        cmp = bLmt - aLmt;
+      } else if (aHas !== bHas) {
+        // A session with a valid last_message_time ranks above one without.
+        cmp = aHas ? -1 : 1;
+      } else {
+        // Neither has a usable last_message_time → fall back to file mtime.
+        const aM = new Date(a.last_modified).getTime();
+        const bM = new Date(b.last_modified).getTime();
+        cmp = bM - aM;
+      }
+      return sessionSortOrder === 'newest' ? cmp : -cmp;
     });
 
     // Filter by source (entrypoint)
