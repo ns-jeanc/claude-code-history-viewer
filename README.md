@@ -8,6 +8,9 @@
 
 Browse, search, and analyze conversations from **Claude Code**, **Gemini CLI**, **Antigravity**, **Codex CLI**, **Cline**, **Cursor**, **Aider**, **OpenCode**, **ForgeCode**, **CodeBuddy Code**, and **Grok CLI** — as a desktop app or headless server. 100% offline.
 
+![Uploading image.png…]()
+
+
 [![Version](https://img.shields.io/github/v/release/jhlee0409/claude-code-history-viewer?label=Version&color=blue)](https://github.com/jhlee0409/claude-code-history-viewer/releases)
 [![Stars](https://img.shields.io/github/stars/jhlee0409/claude-code-history-viewer?style=flat&color=yellow)](https://github.com/jhlee0409/claude-code-history-viewer/stargazers)
 [![License](https://img.shields.io/github/license/jhlee0409/claude-code-history-viewer)](LICENSE)
